@@ -26,6 +26,7 @@ export class OpenaiAssistantService implements OnModuleInit {
   async createAssistant() {
     const param = this.getDefaultAssistantConfig();
     const assistant = await this.openai.beta.assistants.create(param);
+    console.log(assistant);
   }
 
   private getDefaultAssistantConfig(): AssistantCreateParams {
@@ -43,5 +44,6 @@ export class OpenaiAssistantService implements OnModuleInit {
       this.assistantFilePath,
       'utf8',
     );
+    return JSON.parse(assistantData);
   }
 }
