@@ -1,5 +1,6 @@
-import { Controller, Get } from '@nestjs/common';
+import { Body, Controller, Get } from '@nestjs/common';
 import { OpenaiAssistantService } from './openai-assistant.service';
+import { AssistantCreateParams } from 'openai/resources/beta/assistants/assistants';
 
 @Controller('openai-assistant')
 export class OpenaiAssistantController {
@@ -8,7 +9,13 @@ export class OpenaiAssistantController {
   ) {}
 
   @Get()
-  async createAssistant() {
-    return await this.openaiAssistantService.createAssistant();
+  async createAssistant(
+    @Body()
+    assistantParams: {
+      name: string;
+      instructions: string;
+    },
+  ) {
+    return await this.openaiAssistantService.createAssistant(assistantParams);
   }
 }

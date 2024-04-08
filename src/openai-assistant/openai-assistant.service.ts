@@ -1,6 +1,9 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import OpenAI from 'openai';
-import { AssistantCreateParams } from 'openai/resources/beta/assistants/assistants';
+import {
+  Assistant,
+  AssistantCreateParams,
+} from 'openai/resources/beta/assistants/assistants';
 const fsPromises = require('fs').promises;
 
 enum ModelType {
@@ -23,27 +26,45 @@ export class OpenaiAssistantService implements OnModuleInit {
     this.openai = new OpenAI({ apiKey: openaiKey });
   }
 
-  async createAssistant() {
-    const param = this.getDefaultAssistantConfig();
+  async createAssistant(assistantParams: Partial<AssistantCreateParams>) {
+    const param = this.getAssistantParams(assistantParams);
     const assistant = await this.openai.beta.assistants.create(param);
-    console.log(assistant);
+    const configs = await this.getAssistantConfig();
+    this.saveAssistantConfig([...configs, assistant]);
+    return assistant;
   }
 
-  private getDefaultAssistantConfig(): AssistantCreateParams {
+  private getAssistantParams(
+    assistantParams: Partial<AssistantCreateParams>,
+  ): AssistantCreateParams {
+    const { name, instructions, tools, model } = assistantParams;
     return {
-      name: 'Murder mystery helper',
+      name: name || 'Murder mystery helper',
       instructions:
+        instructions ||
         "You're a murder mystery assistant, helping solve murder mysteries.",
-      tools: [{ type: 'retrieval' }],
-      model: 'gpt-4-1106-preview',
+      tools: tools || [{ type: 'retrieval' }],
+      model: model || 'gpt-4-1106-preview',
     };
   }
 
-  async getAssistantConfig() {
-    const assistantData = await fsPromises.readFile(
+  async getAssistantConfig(): Promise<Assistant[]> {
+    try {
+      const assistantData = await fsPromises.readFile(
+        this.assistantFilePath,
+        'utf8',
+      );
+      return JSON.parse(assistantData);
+    } catch (error) {
+      console.error('Error reading assistant config:', error);
+      return [];
+    }
+  }
+
+  async saveAssistantConfig(assistantDetails: Assistant[]) {
+    await fsPromises.writeFile(
       this.assistantFilePath,
-      'utf8',
+      JSON.stringify(assistantDetails, null, 2),
     );
-    return JSON.parse(assistantData);
   }
 }
