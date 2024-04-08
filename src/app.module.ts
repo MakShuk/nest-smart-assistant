@@ -3,9 +3,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { OpenaiModule } from './openai/openai.module';
+import { OpenaiAssistantModule } from './openai-assistant/openai-assistant.module';
 
 @Module({
-  imports: [ConfigModule.forRoot(), OpenaiModule],
+  imports: [ConfigModule.forRoot(), OpenaiModule, OpenaiAssistantModule],
   controllers: [AppController],
   providers: [AppService],
 })

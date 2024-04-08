@@ -1,30 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
 import fs from 'fs';
-
 import {
   ChatCompletionChunk,
-  ChatCompletionMessage,
   ChatCompletionMessageParam,
 } from 'openai/resources/chat';
 import { ReadStream } from 'fs';
 import { Stream } from 'openai/streaming';
-
-export interface ExtendedChatCompletionMessage extends ChatCompletionMessage {
-  error?: boolean;
-  cost?: string;
-}
-
-type model =
-  | 'gpt-3.5-turbo-0125'
-  | 'gpt-4-turbo-preview'
-  | 'gpt-4-vision-preview';
+import { ExtendedChatCompletionMessage, IPrice } from './openai.interface';
 
 @Injectable()
 export class OpenaiService {
   constructor() {}
-  openai: OpenAI;
-  model: model = 'gpt-3.5-turbo-0125';
+  private openai: OpenAI;
+  model: IPrice['name'] = 'gpt-3.5-turbo-0125';
 
   async onModuleInit() {
     const openaiKey = process.env.OPEN_AI_KEY;
@@ -168,17 +157,40 @@ export class OpenaiService {
     messages: ChatCompletionMessageParam[],
     tools: T[],
   ) {
-    const response = await this.openai.chat.completions.create({
-      model: this.model,
-      messages,
-      tools,
-      tool_choice: 'auto',
-    });
-    const responseMessage = response.choices[0].message;
-    const toolCalls = responseMessage.tool_calls;
-    console.log(this.costCalculation(response));
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: this.model,
+        messages,
+        tools,
+        tool_choice: 'auto',
+      });
+      const responseMessage = response.choices[0].message;
+      const toolCalls = responseMessage.tool_calls;
+      console.log(this.costCalculation(response));
 
-    return { responseMessage };
+      if (!responseMessage.tool_calls) {
+        throw new Error(`Tool calls not found in response: ${responseMessage}`);
+      }
+
+      return { toolCalls, responseMessage };
+    } catch (error) {
+      if (error instanceof OpenAI.APIError) {
+        const { status, message, code, type } = error;
+        const errorMessage = `status: ${status} message: ${message} code: ${code} type: ${type}`;
+        console.error(errorMessage);
+        return {
+          role: 'assistant',
+          content: errorMessage,
+          error: true,
+        };
+      } else {
+        return {
+          role: 'assistant',
+          content: `Non-API error, ${error}`,
+          error: true,
+        };
+      }
+    }
   }
 
   async fileUploads(): Promise<void> {
