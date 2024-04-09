@@ -193,13 +193,6 @@ export class OpenaiService {
     }
   }
 
-  async fileUploads(): Promise<void> {
-    await this.openai.files.create({
-      file: fs.createReadStream('input.json'),
-      purpose: 'fine-tune',
-    });
-  }
-
   createUserMessage(message: string): ChatCompletionMessageParam {
     return {
       role: 'user',

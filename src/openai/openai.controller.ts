@@ -82,11 +82,6 @@ export class OpenaiController {
     return await this.openaiService.imageResponse([messages]);
   }
 
-  @Get('file-uploads')
-  fileUploads(): Promise<void> {
-    return this.openaiService.fileUploads();
-  }
-
   @Get('call-function')
   async callFunction() {
     const messages: ChatCompletionMessageParamType[] = [

@@ -1,5 +1,19 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, HttpCode } from '@nestjs/common';
 import { OpenaiAssistantService } from './openai-assistant.service';
+
+interface AssistantParams {
+  name: string;
+  instructions: string;
+}
+
+interface Message {
+  content: string;
+}
+
+interface File {
+  path: string;
+  id: string;
+}
 
 @Controller('openai-assistant')
 export class OpenaiAssistantController {
@@ -10,10 +24,7 @@ export class OpenaiAssistantController {
   @Post('create')
   async createAssistant(
     @Body()
-    assistantParams: {
-      name: string;
-      instructions: string;
-    },
+    assistantParams: AssistantParams,
   ) {
     return await this.openaiAssistantService.createAssistant(assistantParams);
   }
@@ -23,17 +34,16 @@ export class OpenaiAssistantController {
     return await this.openaiAssistantService.getAssistantConfig();
   }
 
-  @Get('start')
+  @Post('start')
   async startDialog(
     @Body()
-    massage: {
-      content: string;
-    },
+    message: Message,
   ) {
-    return await this.openaiAssistantService.startDialog(massage.content);
+    return await this.openaiAssistantService.startDialog(message.content);
   }
 
   @Post('reset-chat')
+  @HttpCode(204)
   resetChat() {
     return this.openaiAssistantService.resetThread();
   }
@@ -41,10 +51,7 @@ export class OpenaiAssistantController {
   @Post('upload-file')
   fileUploads(
     @Body()
-    file: {
-      path: string;
-      id: string;
-    },
+    file: File,
   ) {
     return this.openaiAssistantService.uploadFile(file.path, file.id);
   }
