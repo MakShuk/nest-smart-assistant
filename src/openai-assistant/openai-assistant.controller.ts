@@ -37,4 +37,15 @@ export class OpenaiAssistantController {
   resetChat() {
     return this.openaiAssistantService.resetThread();
   }
+
+  @Post('upload-file')
+  fileUploads(
+    @Body()
+    file: {
+      path: string;
+      id: string;
+    },
+  ) {
+    return this.openaiAssistantService.uploadFile(file.path, file.id);
+  }
 }

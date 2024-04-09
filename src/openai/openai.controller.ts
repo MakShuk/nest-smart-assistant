@@ -27,7 +27,7 @@ export class OpenaiController {
     );
     messages.push(this.openaiService.createUserMessage(`${text.content}`));
     const response = await this.openaiService.response(messages);
-    if (response.error) console.log(`Ошибка: ${response.content}`);
+    if (response.error) console.error(`Ошибка: ${response.content}`);
     return response;
   }
 
@@ -49,7 +49,7 @@ export class OpenaiController {
       this.openaiService.createUserMessage(`${text.assistant} ${message}`),
     );
     const response = await this.openaiService.response(messages);
-    if (response.error) console.log(`Ошибка: ${response.content}`);
+    if (response.error) console.error(`Ошибка: ${response.content}`);
     return JSON.parse(response.content);
   }
 
@@ -165,8 +165,6 @@ export class OpenaiController {
         content: functionResponse,
       });
     }
-    console.log(messages);
-
     return await this.openaiService.response(messages);
   }
 
