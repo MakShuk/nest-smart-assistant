@@ -5,7 +5,7 @@ import {
   AssistantCreateParams,
 } from 'openai/resources/beta/assistants/assistants';
 import { Thread } from 'openai/resources/beta/threads/threads';
-const fsPromises = require('fs').promises;
+import { promises as fsPromises } from 'fs';
 import * as fs from 'fs';
 
 enum ModelType {
@@ -54,7 +54,7 @@ export class OpenaiAssistantService implements OnModuleInit {
       );
 
       while (runStatus.status !== 'completed') {
-        await new Promise((resolve) => setTimeout(resolve, 400));
+        await this.sleep(400);
         runStatus = await this.openai.beta.threads.runs.retrieve(
           thread.id,
           run.id,
@@ -137,20 +137,6 @@ export class OpenaiAssistantService implements OnModuleInit {
     }
   }
 
-  private getAssistantParams(
-    assistantParams: Partial<AssistantCreateParams>,
-  ): AssistantCreateParams {
-    const { name, instructions, tools, model } = assistantParams;
-    return {
-      name: name || 'Murder mystery helper',
-      instructions:
-        instructions ||
-        "You're a murder mystery assistant, helping solve murder mysteries.",
-      tools: tools || [{ type: 'retrieval' }],
-      model: model || 'gpt-4-1106-preview',
-    };
-  }
-
   async getAssistantConfig(): Promise<Assistant[]> {
     try {
       const assistantData = await fsPromises.readFile(
@@ -179,5 +165,23 @@ export class OpenaiAssistantService implements OnModuleInit {
       console.error('Error saving assistant config:', error);
       throw new Error('Failed to save assistant config');
     }
+  }
+
+  private getAssistantParams(
+    assistantParams: Partial<AssistantCreateParams>,
+  ): AssistantCreateParams {
+    const { name, instructions, tools, model } = assistantParams;
+    return {
+      name: name || 'Murder mystery helper',
+      instructions:
+        instructions ||
+        "You're a murder mystery assistant, helping solve murder mysteries.",
+      tools: tools || [{ type: 'retrieval' }],
+      model: model || 'gpt-4-1106-preview',
+    };
+  }
+
+  private sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
