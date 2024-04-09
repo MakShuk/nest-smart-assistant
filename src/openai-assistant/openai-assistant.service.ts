@@ -1,9 +1,12 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
+import { lchown } from 'fs';
 import OpenAI from 'openai';
 import {
   Assistant,
   AssistantCreateParams,
 } from 'openai/resources/beta/assistants/assistants';
+import { Message } from 'openai/resources/beta/threads/messages/messages';
+import { Thread } from 'openai/resources/beta/threads/threads';
 const fsPromises = require('fs').promises;
 
 enum ModelType {
@@ -16,6 +19,7 @@ enum ModelType {
 export class OpenaiAssistantService implements OnModuleInit {
   private openai: OpenAI;
   private assistantFilePath = './assistant.json';
+  private thread: Thread;
   model: ModelType = ModelType.GPT_3_5_TURBO_0125;
 
   async onModuleInit() {
@@ -24,6 +28,71 @@ export class OpenaiAssistantService implements OnModuleInit {
       throw new Error('OPENAI_API_KEY is not defined');
     }
     this.openai = new OpenAI({ apiKey: openaiKey });
+  }
+
+  async startDialog(newMessage: string) {
+    const currentAssistantId = (await this.getAssistantConfig())[0].id;
+    if (!this.thread) {
+      this.thread = await this.openai.beta.threads.create();
+    }
+
+    const thread = this.thread;
+    let lastMessage: string;
+
+    console.log(await this.openai.beta.threads.messages.list(thread.id));
+
+    await this.openai.beta.threads.messages.create(thread.id, {
+      role: 'user',
+      content: `${newMessage}`,
+    });
+
+    const run = await this.openai.beta.threads.runs.create(thread.id, {
+      assistant_id: currentAssistantId,
+    });
+
+    let runStatus = await this.openai.beta.threads.runs.retrieve(
+      thread.id,
+      run.id,
+    );
+
+    while (runStatus.status !== 'completed') {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      runStatus = await this.openai.beta.threads.runs.retrieve(
+        thread.id,
+        run.id,
+      );
+      console.log(runStatus.status);
+      // Check for failed, cancelled, or expired status
+      if (['failed', 'cancelled', 'expired'].includes(runStatus.status)) {
+        console.log(
+          `Run status is '${runStatus.status}'. Unable to complete the request.`,
+        );
+        break; // Exit the loop if the status indicates a failure or cancellation
+      }
+    }
+
+    const messages = await this.openai.beta.threads.messages.list(thread.id);
+
+    const lastMessageForRun = messages.data
+      .filter(
+        (message) => message.run_id === run.id && message.role === 'assistant',
+      )
+      .pop();
+
+    messages.data.forEach((message) => {
+      console.log(message);
+    });
+
+    if (lastMessageForRun) {
+      if ('text' in lastMessageForRun.content[0]) {
+        lastMessage = lastMessageForRun.content[0].text.value;
+        console.log(lastMessage);
+      }
+    } else if (!['failed', 'cancelled', 'expired'].includes(runStatus.status)) {
+      console.log('No response received from the assistant.');
+    }
+
+    return lastMessage;
   }
 
   async createAssistant(assistantParams: Partial<AssistantCreateParams>) {
