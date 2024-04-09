@@ -32,4 +32,9 @@ export class OpenaiAssistantController {
   ) {
     return await this.openaiAssistantService.startDialog(massage.content);
   }
+
+  @Post('reset-chat')
+  resetChat() {
+    return this.openaiAssistantService.resetThread();
+  }
 }

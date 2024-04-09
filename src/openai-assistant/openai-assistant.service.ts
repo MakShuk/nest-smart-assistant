@@ -39,8 +39,6 @@ export class OpenaiAssistantService implements OnModuleInit {
     const thread = this.thread;
     let lastMessage: string;
 
-    console.log(await this.openai.beta.threads.messages.list(thread.id));
-
     await this.openai.beta.threads.messages.create(thread.id, {
       role: 'user',
       content: `${newMessage}`,
@@ -62,12 +60,11 @@ export class OpenaiAssistantService implements OnModuleInit {
         run.id,
       );
       console.log(runStatus.status);
-      // Check for failed, cancelled, or expired status
       if (['failed', 'cancelled', 'expired'].includes(runStatus.status)) {
         console.log(
           `Run status is '${runStatus.status}'. Unable to complete the request.`,
         );
-        break; // Exit the loop if the status indicates a failure or cancellation
+        break;
       }
     }
 
@@ -128,6 +125,11 @@ export class OpenaiAssistantService implements OnModuleInit {
       console.error('Error reading assistant config:', error);
       return [];
     }
+  }
+
+  resetThread(): string {
+    this.thread = null;
+    return `reset thread`;
   }
 
   async saveAssistantConfig(assistantDetails: Assistant[]) {
