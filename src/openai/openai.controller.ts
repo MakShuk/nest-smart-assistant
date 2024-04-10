@@ -5,7 +5,6 @@ import { Stream } from 'openai/streaming';
 import { Response } from 'express';
 import {
   ChatCompletionChunk,
-  ChatCompletionMessageParam,
 } from 'openai/resources/chat';
 import {
   ChatCompletionMessageParamType,
