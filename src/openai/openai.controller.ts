@@ -3,9 +3,7 @@ import { OpenaiService } from './openai.service';
 import fs, { ReadStream } from 'fs';
 import { Stream } from 'openai/streaming';
 import { Response } from 'express';
-import {
-  ChatCompletionChunk,
-} from 'openai/resources/chat';
+import { ChatCompletionChunk } from 'openai/resources/chat';
 import {
   ChatCompletionMessageParamType,
   ExtendedChatCompletionMessage,
