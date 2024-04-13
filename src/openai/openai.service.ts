@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
-import fs from 'fs';
 import {
   ChatCompletionChunk,
   ChatCompletionMessageParam,
