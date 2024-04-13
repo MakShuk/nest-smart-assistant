@@ -1,35 +1,63 @@
-import { Injectable } from '@nestjs/common';
-import { google } from 'googleapis';
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import { google, tasks_v1 } from 'googleapis';
 import { Request } from 'express';
 import { OAuth2Client, Credentials } from 'google-auth-library';
 import { promises as fsPromises } from 'fs';
 
 @Injectable()
-export class GoogleTasksApiService {
-  oauth2Client: OAuth2Client;
-  private tokensFilePath = '../../tokens.json';
+export class GoogleTasksApiService implements OnModuleInit {
+  private oauth2Client: OAuth2Client;
+  private tasks: tasks_v1.Tasks;
+  private readonly tokensFilePath = 'tokens.json';
+
+  async onModuleInit() {
+    console.log('Initializing GoogleTasksApiService...');
+    try {
+      this.oauth2Client = new google.auth.OAuth2(
+        process.env.YOUR_CLIENT_ID,
+        process.env.YOUR_CLIENT_SECRET,
+        process.env.YOUR_REDIRECT_URL,
+      );
+
+      this.tasks = google.tasks({
+        version: 'v1',
+        auth: process.env.GOOGLE_API_KEY,
+      });
+
+      const tokens = await this.getTokens();
+
+      if (tokens) {
+        this.oauth2Client.setCredentials(tokens);
+      } else {
+        console.log('No tokens found, redirecting to authorization...');
+        await this.authorization();
+      }
+    } catch (error) {
+      console.error('Error initializing GoogleTasksApiService:', error);
+      throw new Error('Failed to initialize GoogleTasksApiService');
+    }
+  }
 
   async authorization() {
-    this.oauth2Client = new google.auth.OAuth2(
-      process.env.YOUR_CLIENT_ID,
-      process.env.YOUR_CLIENT_SECRET,
-      process.env.YOUR_REDIRECT_URL,
-    );
-
     const scopes = ['https://www.googleapis.com/auth/tasks'];
     const url = this.oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: scopes,
     });
-
+    console.log('Authorize this app by visiting this url:', url);
     return url;
   }
 
   async redirect(req: Request) {
-    const code = req.query.code as string;
-    const { tokens } = await this.oauth2Client.getToken(code);
-    await this.saveTokens(tokens);
-    this.oauth2Client.setCredentials(tokens);
+    try {
+      const code = req.query.code as string;
+      const { tokens } = await this.oauth2Client.getToken(code);
+      await this.saveTokens(tokens);
+      this.oauth2Client.setCredentials(tokens);
+    } catch (error) {
+      console.error('Error during authorization:', error);
+      throw new Error('Failed to authorize');
+    }
   }
 
   async getEvents() {
@@ -37,18 +65,9 @@ export class GoogleTasksApiService {
       throw new Error('OAuth2Client has no credentials set');
     }
 
-    const calendar = google.calendar({
-      version: 'v3',
-      auth: process.env.GOOGLE_API_KEY,
+    const taskLists = await this.tasks.tasklists.list({
+      auth: this.oauth2Client,
     });
-
-    const tasks = google.tasks({
-      version: 'v1',
-      auth: process.env.GOOGLE_API_KEY,
-    });
-
-    const taskLists = await tasks.tasklists.list({ auth: this.oauth2Client });
-    console.log(taskLists);
     return taskLists.data.items;
   }
 
@@ -64,7 +83,7 @@ export class GoogleTasksApiService {
     }
   }
 
-  private async getTokens() {
+  private async getTokens(): Promise<Credentials | null> {
     try {
       const tokens = await fsPromises.readFile(this.tokensFilePath, 'utf8');
       return JSON.parse(tokens);

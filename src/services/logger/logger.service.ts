@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-
 import { Logger, ILogObj } from 'tslog';
 
 @Injectable()
