@@ -5,9 +5,16 @@ import { ConfigModule } from '@nestjs/config';
 import { OpenaiModule } from './openai/openai.module';
 import { OpenaiAssistantModule } from './openai-assistant/openai-assistant.module';
 import { GoogleApiModule } from './google-tasks-api/google-api.module';
+import { TelegrafModule } from './telegraf/telegraf.module';
 
 @Module({
-  imports: [ConfigModule.forRoot(), OpenaiModule, OpenaiAssistantModule, GoogleApiModule],
+  imports: [
+    ConfigModule.forRoot(),
+    OpenaiModule,
+    OpenaiAssistantModule,
+    GoogleApiModule,
+    TelegrafModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
