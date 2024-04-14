@@ -79,14 +79,13 @@ export class GoogleTasksApiService implements OnModuleInit {
       });
       return taskLists.data.items;
     } catch (error) {
-      console.error('Error getting task lists:', error);
+      this.logger.error('Error getting task lists:', error);
       throw new Error('Failed to get task lists');
     }
   }
 
   async getTasksForList(taskListId: string) {
     try {
-      console.log(taskListId);
       const tasks = await this.tasks.tasks.list({
         tasklist: taskListId,
         auth: this.oauth2Client,
@@ -100,7 +99,6 @@ export class GoogleTasksApiService implements OnModuleInit {
 
   async getCompletedTasksForList(taskListId: string) {
     try {
-      console.log(taskListId);
       const tasks = await this.tasks.tasks.list({
         tasklist: taskListId,
         auth: this.oauth2Client,

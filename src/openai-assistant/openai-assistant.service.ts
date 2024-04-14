@@ -7,6 +7,7 @@ import {
 import { Thread } from 'openai/resources/beta/threads/threads';
 import { promises as fsPromises } from 'fs';
 import * as fs from 'fs';
+import { LoggerService } from 'src/services/logger/logger.service';
 
 enum ModelType {
   GPT_3_5_TURBO_0125 = 'gpt-3.5-turbo-0125',
@@ -16,6 +17,7 @@ enum ModelType {
 
 @Injectable()
 export class OpenaiAssistantService implements OnModuleInit {
+  constructor(private readonly logger: LoggerService) {}
   private openai: OpenAI;
   private assistantFilePath = './assistant.json';
   private thread: Thread;
@@ -61,7 +63,7 @@ export class OpenaiAssistantService implements OnModuleInit {
         );
 
         if (['failed', 'cancelled', 'expired'].includes(runStatus.status)) {
-          console.error(
+          this.logger.error(
             `Run status is '${runStatus.status}'. Unable to complete the request.`,
           );
           break;
@@ -84,12 +86,12 @@ export class OpenaiAssistantService implements OnModuleInit {
       } else if (
         !['failed', 'cancelled', 'expired'].includes(runStatus.status)
       ) {
-        console.error('No response received from the assistant.');
+        this.logger.error('No response received from the assistant.');
       }
 
       return lastMessage;
     } catch (error) {
-      console.error('Error starting dialog:', error);
+      this.logger.error('Error starting dialog:', error);
       throw new Error('Failed to start dialog');
     }
   }
@@ -102,7 +104,7 @@ export class OpenaiAssistantService implements OnModuleInit {
       this.saveAssistantConfig([...configs, assistant]);
       return assistant;
     } catch (error) {
-      console.error('Error creating assistant:', error);
+      this.logger.error('Error creating assistant:', error);
       throw new Error('Failed to create assistant');
     }
   }
@@ -132,7 +134,7 @@ export class OpenaiAssistantService implements OnModuleInit {
 
       await this.saveAssistantConfig(data);
     } catch (error) {
-      console.error('Error uploading file:', error);
+      this.logger.error('Error uploading file:', error);
       throw new Error('Failed to upload file');
     }
   }
@@ -145,7 +147,7 @@ export class OpenaiAssistantService implements OnModuleInit {
       );
       return JSON.parse(assistantData);
     } catch (error) {
-      console.error('Error reading assistant config:', error);
+      this.logger.error('Error reading assistant config:', error);
       return [];
     }
   }
@@ -162,7 +164,7 @@ export class OpenaiAssistantService implements OnModuleInit {
         JSON.stringify(assistantDetails, null, 2),
       );
     } catch (error) {
-      console.error('Error saving assistant config:', error);
+      this.logger.error('Error saving assistant config:', error);
       throw new Error('Failed to save assistant config');
     }
   }
