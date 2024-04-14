@@ -5,14 +5,14 @@ import { Telegraf, session } from 'telegraf';
 import { Context } from 'telegraf';
 
 @Injectable()
-export class TelegrafService implements OnModuleInit {
+export class TelegrafService {
   constructor(private readonly logger: LoggerService) {}
   private bot: Telegraf;
   private botRun: false | Date = false;
 
-  async onModuleInit() {
+  async init() {
     await this.botInit();
-    this.logger.info('Telegram Bot Started');
+    this.logger.info('Telegram Bot initialized');
   }
 
   async botInit() {
@@ -25,7 +25,10 @@ export class TelegrafService implements OnModuleInit {
     this.bot = new Telegraf(botToken);
     this.bot.use(session());
     this.bot.catch((err: any, ctx: Context) => {
-      console.log(`Ooops, encountered an error for ${ctx.updateType}`, err);
+      this.logger.error(
+        `Ooops, encountered an error for ${ctx.updateType}`,
+        err,
+      );
     });
     await this.checkUserAccess();
   }
@@ -58,8 +61,8 @@ export class TelegrafService implements OnModuleInit {
 
   imageMessage() {
     this.bot.on('photo', (ctx: Context) => {
-      console.log('photo');
-      console.log(ctx.message);
+     this.logger.warn('photo');
+     this.logger.warn(ctx.message);
       ctx.reply('🚧 В разработке');
     });
   }
@@ -67,7 +70,7 @@ export class TelegrafService implements OnModuleInit {
   private async checkUserAccess() {
     this.bot.use(async (ctx: Context, next: () => Promise<void>) => {
       const userId = ctx.from.id;
-      const isSuperAdmin = process.env.SUPER_ADMIN_ID === userId.toString();
+      const isSuperAdmin = process.env.SUPER_USER_ID === userId.toString();
 
       this.logger.info(
         `Проверка доступа пользователя ${userId} ${isSuperAdmin ? ' прошла успешно' : 'доступ запрещен'}`,

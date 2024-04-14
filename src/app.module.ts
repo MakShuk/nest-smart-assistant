@@ -6,6 +6,16 @@ import { OpenaiModule } from './openai/openai.module';
 import { OpenaiAssistantModule } from './openai-assistant/openai-assistant.module';
 import { GoogleApiModule } from './google-tasks-api/google-api.module';
 import { TelegrafModule } from './telegraf/telegraf.module';
+import { LoggerService } from './services/logger/logger.service';
+import { OpenaiService } from './openai/openai.service';
+import { OpenaiAssistantService } from './openai-assistant/openai-assistant.service';
+import { TelegrafService } from './telegraf/telegraf.service';
+import { GoogleTasksApiService } from './google-tasks-api/google-tasks-api.service';
+
+const loggerServiceProvider = {
+  provide: LoggerService,
+  useValue: new LoggerService('app'),
+};
 
 @Module({
   imports: [
@@ -16,6 +26,13 @@ import { TelegrafModule } from './telegraf/telegraf.module';
     TelegrafModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    loggerServiceProvider,
+    OpenaiService,
+    OpenaiAssistantService,
+    GoogleTasksApiService,
+    TelegrafService,
+  ],
 })
 export class AppModule {}
