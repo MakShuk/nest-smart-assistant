@@ -28,6 +28,16 @@ export class GoogleTasksApiService implements OnModuleInit {
 
       if (tokens) {
         this.oauth2Client.setCredentials(tokens);
+        this.oauth2Client.on('tokens', (updatedTokens) => {
+          if (updatedTokens.refresh_token) {
+            console.log('Received new refresh token');
+            tokens.refresh_token = updatedTokens.refresh_token;
+          }
+          tokens.access_token = updatedTokens.access_token;
+          tokens.expiry_date = updatedTokens.expiry_date;
+
+          this.saveTokens(tokens);
+        });
       } else {
         console.log('No tokens found, redirecting to authorization...');
         await this.authorization();
@@ -60,15 +70,88 @@ export class GoogleTasksApiService implements OnModuleInit {
     }
   }
 
-  async getEvents() {
-    if (!this.oauth2Client.credentials) {
-      throw new Error('OAuth2Client has no credentials set');
+  async getAllTaskList() {
+    try {
+      const taskLists = await this.tasks.tasklists.list({
+        auth: this.oauth2Client,
+      });
+      return taskLists.data.items;
+    } catch (error) {
+      console.error('Error getting task lists:', error);
+      throw new Error('Failed to get task lists');
     }
+  }
 
-    const taskLists = await this.tasks.tasklists.list({
-      auth: this.oauth2Client,
-    });
-    return taskLists.data.items;
+  async getTasksForList(taskListId: string) {
+    try {
+      console.log(taskListId);
+      const tasks = await this.tasks.tasks.list({
+        tasklist: taskListId,
+        auth: this.oauth2Client,
+      });
+      return tasks.data.items;
+    } catch (error) {
+      console.error('Error getting tasks:', error.message);
+      throw new Error('Failed to get tasks');
+    }
+  }
+
+  async getCompletedTasksForList(taskListId: string) {
+    try {
+      console.log(taskListId);
+      const tasks = await this.tasks.tasks.list({
+        tasklist: taskListId,
+        auth: this.oauth2Client,
+        showCompleted: true,
+      });
+      return tasks.data.items;
+    } catch (error) {
+      console.error('Error getting tasks:', error.message);
+      throw new Error('Failed to get tasks');
+    }
+  }
+
+  async createTask(taskListId: string, task: tasks_v1.Schema$Task) {
+    try {
+      const newTask = await this.tasks.tasks.insert({
+        tasklist: taskListId,
+        requestBody: task,
+        auth: this.oauth2Client,
+      });
+      return newTask.data;
+    } catch (error) {
+      console.error('Error creating task:', error.message);
+      throw new Error('Failed to create task');
+    }
+  }
+
+  async deletedTask(taskListId: string, taskId: string) {
+    try {
+      await this.tasks.tasks.delete({
+        auth: this.oauth2Client,
+        tasklist: taskListId,
+        task: taskId,
+      });
+    } catch (error) {
+      console.error('Error deleting task:', error.message);
+      throw new Error('Failed to delete task');
+    }
+  }
+
+  async taskCompleted(taskListId: string, taskId: string) {
+    try {
+      await this.tasks.tasks.patch({
+        auth: this.oauth2Client,
+        tasklist: taskListId,
+        task: taskId,
+        requestBody: {
+          status: 'completed',
+        },
+      });
+    } catch (error) {
+      console.error('Error completing task:', error.message);
+      throw new Error('Failed to complete task');
+    }
   }
 
   private async saveTokens(tokens: Credentials) {
@@ -86,7 +169,7 @@ export class GoogleTasksApiService implements OnModuleInit {
   private async getTokens(): Promise<Credentials | null> {
     try {
       const tokens = await fsPromises.readFile(this.tokensFilePath, 'utf8');
-      return JSON.parse(tokens);
+      return JSON.parse(tokens) as Credentials;
     } catch (error) {
       console.error('Error reading tokens:', error);
       return null;
