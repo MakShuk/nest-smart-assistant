@@ -12,7 +12,7 @@ import { ExtendedChatCompletionMessage, IPrice } from './openai.interface';
 export class OpenaiService {
   constructor() {}
   private openai: OpenAI;
-  model: IPrice['name'] = 'gpt-3.5-turbo-0125';
+  model: IPrice['name'] = 'gpt-4-turbo-preview';
 
   async onModuleInit() {
     const openaiKey = process.env.OPEN_AI_KEY;

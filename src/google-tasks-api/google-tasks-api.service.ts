@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { google, tasks_v1 } from 'googleapis';
 import { Request } from 'express';
 import { OAuth2Client, Credentials } from 'google-auth-library';
@@ -6,11 +6,15 @@ import { promises as fsPromises } from 'fs';
 import { LoggerService } from 'src/services/logger/logger.service';
 
 @Injectable()
-export class GoogleTasksApiService {
+export class GoogleTasksApiService implements OnModuleInit {
   constructor(private readonly logger: LoggerService) {}
   private oauth2Client: OAuth2Client;
   private tasks: tasks_v1.Tasks;
   private readonly tokensFilePath = 'tokens.json';
+
+  async onModuleInit() {
+    await this.init();
+  }
 
   async init() {
     this.logger.info('Initializing GoogleTasksApiService...');
