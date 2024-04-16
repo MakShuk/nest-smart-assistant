@@ -9,4 +9,9 @@ export class AppController {
   getHello(): string {
     return 'Hello World!';
   }
+
+  @Get('test')
+  getTest(): void {
+    this.appService.test();
+  }
 }

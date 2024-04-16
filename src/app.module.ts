@@ -7,6 +7,7 @@ import { OpenaiAssistantModule } from './openai-assistant/openai-assistant.modul
 import { GoogleApiModule } from './google-tasks-api/google-api.module';
 import { TelegrafModule } from './telegraf/telegraf.module';
 import { LoggerService } from './services/logger/logger.service';
+import { SessionService } from './services/sessions/sessions.service';
 import { OpenaiService } from './openai/openai.service';
 import { OpenaiAssistantService } from './openai-assistant/openai-assistant.service';
 import { TelegrafService } from './telegraf/telegraf.service';
@@ -33,6 +34,7 @@ const loggerServiceProvider = {
     OpenaiAssistantService,
     GoogleTasksApiService,
     TelegrafService,
+    SessionService,
   ],
 })
 export class AppModule {}
