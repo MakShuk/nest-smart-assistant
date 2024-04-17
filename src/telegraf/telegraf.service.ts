@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { LoggerService } from 'src/services/logger/logger.service';
 import { message } from 'telegraf/filters';
-import { Telegraf, session } from 'telegraf';
+import { Markup, Telegraf, session } from 'telegraf';
 import { Context } from 'telegraf';
 
 @Injectable()
@@ -61,11 +61,13 @@ export class TelegrafService {
 
   imageMessage() {
     this.bot.on('photo', (ctx: Context) => {
-     this.logger.warn('photo');
-     this.logger.warn(ctx.message);
+      this.logger.warn('photo');
+      this.logger.warn(ctx.message);
       ctx.reply('🚧 В разработке');
     });
   }
+
+
 
   private async checkUserAccess() {
     this.bot.use(async (ctx: Context, next: () => Promise<void>) => {

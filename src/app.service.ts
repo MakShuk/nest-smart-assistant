@@ -7,6 +7,7 @@ import { GoogleTasksApiService } from './google-tasks-api/google-tasks-api.servi
 import { ChatCompletionMessageParamType } from './openai/openai.interface';
 import * as fs from 'fs';
 import { SessionService } from './services/sessions/sessions.service';
+import { Markup } from 'telegraf';
 
 @Injectable()
 export class AppService implements OnModuleInit {
@@ -35,6 +36,26 @@ export class AppService implements OnModuleInit {
     this.bot.createCommand('reset', async (ctx) => {
       await this.session.saveSession(ctx.from.id, []);
       ctx.reply('Сессия сброшена');
+    });
+
+    this.bot.createCommand('test', async (ctx) => {
+      return ctx.reply(
+        'Режим тестирования',
+        Markup.keyboard([['/menu', 'Тест2'], ['Тест 3'], ['УУУ 4']])
+          .oneTime()
+          .resize()
+          .selective(),
+      );
+    });
+
+    this.bot.createCommand('menu', async (ctx) => {
+      return ctx.reply(
+        'Добро пожаловать!',
+        Markup.inlineKeyboard([
+          Markup.button.callback('Кнопка 1 и Много текста', 'button1'),
+          Markup.button.callback('Кнопка 1 и Много текста', 'button2'),
+        ])
+      );
     });
 
     this.bot.textMessage(async (ctx) => {
