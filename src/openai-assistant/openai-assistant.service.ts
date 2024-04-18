@@ -19,7 +19,7 @@ enum ModelType {
 export class OpenaiAssistantService implements OnModuleInit {
   constructor(private readonly logger: LoggerService) {}
   private openai: OpenAI;
-  private assistantFilePath = './assistant.json';
+  private assistantFilePath = '../../configs//assistant.json';
   private thread: Thread;
   model: ModelType = ModelType.GPT_3_5_TURBO_0125;
 

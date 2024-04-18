@@ -10,7 +10,7 @@ export class GoogleTasksApiService implements OnModuleInit {
   constructor(private readonly logger: LoggerService) {}
   private oauth2Client: OAuth2Client;
   private tasks: tasks_v1.Tasks;
-  private readonly tokensFilePath = 'tokens.json';
+  private readonly tokensFilePath = '../../configs/tokens.json';
 
   async onModuleInit() {
     await this.init();
