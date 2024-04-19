@@ -1,12 +1,20 @@
 {
     "tasklist": [
       {
-        "listName": "Пример имени списка",
-        "listId": 1
+        "listName": "Обучение",
+        "listId": "MTcwMTE3NTYyNzQ0MDI5NDU3NDY6MDow"
       },
       {
-        "listName": "Пример имени списка 2",
-        "listId": 2
+        "listName": "Малые задачи",
+        "listId": "VjkxcWpIY1FHam9WcU5wag"
+      },
+      {
+        "listName": "Юмор",
+        "listId": "OWdRQUltdW45MUZCdWlubg"
+      },
+      {
+        "listName": "Восстановление",
+        "listId": "b2RzQkE4b0pIQU5EUEhCeA"
       }
     ],
     "prompt": [

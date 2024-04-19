@@ -5,7 +5,7 @@ export interface AssistSettings {
 
 interface ITaskList {
   listName: string;
-  listId: number;
+  listId: string;
 }
 
 interface IPromptPath {
