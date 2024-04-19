@@ -10,8 +10,7 @@ export class GoogleTasksApiService implements OnModuleInit {
   constructor(private readonly logger: LoggerService) {}
   private oauth2Client: OAuth2Client;
   private tasks: tasks_v1.Tasks;
-  private readonly tokensFilePath = 'C:/development/NestJS/nest-smart-assistant/configs/tokens.json';
-
+  private readonly tokensFilePath = require('path').join(__dirname, '..', '..', 'configs', 'tokens.json');
   async onModuleInit() {
     await this.init();
   }
