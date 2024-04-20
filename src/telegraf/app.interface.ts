@@ -1,4 +1,4 @@
-export interface AssistSettings {
+export interface IAssistSettings {
   tasklist: ITaskList[];
   prompt: IPromptPath[];
 }
