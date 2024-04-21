@@ -15,16 +15,60 @@
       {
         "listName": "Восстановление",
         "listId": "b2RzQkE4b0pIQU5EUEhCeA"
+      },
+      {
+        "listName": "Спорт",
+        "listId": "bGlHY3VFRXdYTEo4UXhfRQ"
+      },
+      {
+        "listName": "Телеграм помощник",
+        "listId": "RV9nSnYwZkV1V1c5ZlhoOA"
+      },
+      {
+        "listName": "cmVZdkxybDZGMjZmVkJrYw",
+        "listId": "b2RzQkE4b0pIQU5EUEhCeA"
+      },
+      {
+        "listName": "Здоровье",
+        "listId": "b2RzQkE4b0pIQU5EUEhCeA"
+      },
+      {
+        "listName": "Семья",
+        "listId": "b2RzQkE4b0pIQU5EUEhCeA"
+      },
+      {
+        "listName": "Финансы",
+        "listId": "b2RzQkE4b0pIQU5EUEhCeA"
+      },
+      {
+        "listName": "Саморазвитие",
+        "listId": "b2RzQkE4b0pIQU5EUEhCeA"
+      },
+      {
+        "listName": "Творчество",
+        "listId": "b2RzQkE4b0pIQU5EUEhCeA"
+      },
+      {
+        "listName": "Путешествия",
+        "listId": "b2RzQkE4b0pIQU5EUEhCeA"
+      },
+      {
+        "listName": "Друзья",
+        "listId": "b2RzQkE4b0pIQU5EUEhCeA"
+      },
+      {
+        "listName": "Другое",
+        "listId": "b2RzQkE4b0pIQU5EUEhCeA"
       }
     ],
     "prompt": [
       {
-        "description": "Зарос",
-        "path": "C:/Users/maksh/OneDrive/Documents/ИИ Ассистенты/Создатель Расписаний/Запрос.md"
+        "description": "Запрос",
+        "path": "C:/development/NestJS/nest-smart-assistant/templates/Запрос.md"
       },
       {
         "description": "Шаблон",
-        "path": "C:/Users/maksh/OneDrive/Documents/ИИ Ассистенты/Создатель Расписаний/Шаблон.md"
+        "path": "C:/development/NestJS/nest-smart-assistant/templates/Шаблон.md"
       }
     ]
   }

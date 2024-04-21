@@ -8,7 +8,7 @@ import { ChatCompletionMessageParamType } from './openai/openai.interface';
 import * as fs from 'fs';
 import { SessionService } from './services/sessions/sessions.service';
 import { Markup } from 'telegraf';
-import { IAssistSettings } from './telegraf/app.interface';
+import { IAssistSettings, ITaskList } from './app.interface';
 
 
 @Injectable()
@@ -20,7 +20,7 @@ export class AppService implements OnModuleInit {
     private readonly AssistAI: OpenaiAssistantService,
     private readonly task: GoogleTasksApiService,
     private readonly session: SessionService,
-  ) {}
+  ) { }
 
   onModuleInit(): void {
     this.bot.init();
@@ -39,6 +39,7 @@ export class AppService implements OnModuleInit {
       await this.session.saveSession(ctx.from.id, []);
       ctx.reply('Сессия сброшена');
     });
+
 
     this.bot.createCommand('test', async (ctx) => {
       return ctx.reply(
@@ -74,8 +75,9 @@ export class AppService implements OnModuleInit {
 
   async createDailySchedule(userId: number) {
     const settings = await this.getSettings();
+    const taskList = await this.getAllTaskList();
     const prompt = await this.getMainPrompt(settings);
-    const tasks = await this.getTasks(settings);
+    const tasks = await this.getTasks(taskList);
 
     const fullPrompt = prompt + '\n' + tasks;
     const userMessage = this.ai.createUserMessage(fullPrompt);
@@ -151,9 +153,9 @@ export class AppService implements OnModuleInit {
     }
   }
 
-  async getTasks(settings: IAssistSettings) {
+  async getTasks(tasklist: ITaskList[]) {
     try {
-      const { tasklist } = settings;
+
       let fullTask = [];
       for (const list of tasklist) {
         const tasks = await this.task.getTasksForList(list.listId);
@@ -165,6 +167,7 @@ export class AppService implements OnModuleInit {
         }
         fullTask.push(task);
       }
+
       const example = `Пример включения задачи в расписание в шаблоне  "14:00 [юмор]".\n Добавленное в расписание "Юмор:Посмотреть видео"`;
       return (
         `${example}\n Список задач для включения в расписание: \n` +
@@ -174,5 +177,16 @@ export class AppService implements OnModuleInit {
       console.error('Error getting tasks:', error);
       throw new Error('Failed to get tasks');
     }
+  }
+
+  async getAllTaskList() {
+    const taskLists = await this.task.getAllTaskList();
+    const mappedTaskLists = taskLists.map(taskList => {
+      return {
+        listName: taskList.title,
+        listId: taskList.id
+      } as ITaskList;
+    });
+    return mappedTaskLists;
   }
 }
