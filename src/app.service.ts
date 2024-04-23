@@ -143,7 +143,14 @@ export class AppService implements OnModuleInit {
       const { prompt } = settings;
       let fullPrompt = '';
       for (const path of prompt) {
-        const tasks = await fs.promises.readFile(path.path, 'utf-8');
+        let parts = path.path.split('/');
+
+        const folder = parts[0];
+        const filename = parts[1];
+        const tasks = await fs.promises.readFile(
+          require('path').join(__dirname, '..', folder, filename),
+          'utf-8',
+        );;
         fullPrompt += tasks + `: \n`;
       }
       return fullPrompt;

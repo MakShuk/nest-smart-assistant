@@ -64,11 +64,11 @@
     "prompt": [
       {
         "description": "Запрос",
-        "path": "C:/development/NestJS/nest-smart-assistant/templates/Запрос.md"
+        "path": "templates/Запрос.md"
       },
       {
         "description": "Шаблон",
-        "path": "C:/development/NestJS/nest-smart-assistant/templates/Шаблон.md"
+        "path": "templates/Шаблон.md"
       }
     ]
   }
