@@ -80,10 +80,10 @@ export class GoogleTasksApiService implements OnModuleInit {
       const taskLists = await this.tasks.tasklists.list({
         auth: this.oauth2Client,
       });
-      return taskLists.data.items;
+      return { error: false, content: taskLists.data.items };
     } catch (error) {
       this.logger.error('Error getting task lists:', error);
-      throw new Error('Failed to get task lists');
+      return { error: true, content: 'Failed to get task lists' };
     }
   }
 

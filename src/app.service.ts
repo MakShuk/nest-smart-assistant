@@ -11,6 +11,7 @@ import { Markup } from 'telegraf';
 import { IAssistSettings, ITaskList } from './app.interface';
 
 
+
 @Injectable()
 export class AppService implements OnModuleInit {
   constructor(
@@ -30,7 +31,13 @@ export class AppService implements OnModuleInit {
       const userId = ctx.from.id;
 
       const message = await this.createDailySchedule(userId);
-      ctx.reply(message, {
+      if (message.error) {
+        const url = await this.task.authorization()
+        ctx.reply(`Необходимо авторизоваться ${url}`)
+        return null
+      }
+
+      ctx.reply(message.content, {
         parse_mode: 'Markdown',
       });
     });
@@ -77,9 +84,18 @@ export class AppService implements OnModuleInit {
     const settings = await this.getSettings();
     const taskList = await this.getAllTaskList();
     const prompt = await this.getMainPrompt(settings);
-    const tasks = await this.getTasks(taskList);
 
-    const fullPrompt = prompt + '\n' + tasks;
+    if (!Array.isArray(taskList.content) || taskList.error) {
+      return { error: true, content: 'Failed to get task lists' }
+    };
+
+    const tasks = await this.getTasks(taskList.content);
+
+    if (tasks.error) {
+      return { error: true, content: 'Failed to get tasks' }
+    }
+
+    const fullPrompt = prompt + '\n' + tasks.content;
     const userMessage = this.ai.createUserMessage(fullPrompt);
 
     const secession = (await this.session.getSession(
@@ -92,7 +108,7 @@ export class AppService implements OnModuleInit {
     const response = await this.ai.response(secession);
     secession.push(this.ai.createAssistantMessage(response.content));
     await this.session.saveSession(userId, secession);
-    return response.content;
+    return { error: false, content: response.content };
   }
 
   async messageAction(userId: number, message: string) {
@@ -160,7 +176,10 @@ export class AppService implements OnModuleInit {
     }
   }
 
-  async getTasks(tasklist: ITaskList[]) {
+  async getTasks(tasklist: ITaskList[]): Promise<{
+    error: boolean;
+    content: string;
+  }> {
     try {
 
       let fullTask = [];
@@ -176,24 +195,35 @@ export class AppService implements OnModuleInit {
       }
 
       const example = `Пример включения задачи в расписание в шаблоне  "14:00 [юмор]".\n Добавленное в расписание "Юмор:Посмотреть видео"`;
-      return (
-        `${example}\n Список задач для включения в расписание: \n` +
-        fullTask.join('\n')
-      );
+      return {
+        error: false, content: `${example}\n Список задач для включения в расписание: \n` +
+          fullTask.join('\n')
+      };
     } catch (error) {
-      console.error('Error getting tasks:', error);
-      throw new Error('Failed to get tasks');
+      this.log.error('Error getting tasks:', error);
+      return { error: true, content: 'Failed to get tasks' };
     }
   }
 
   async getAllTaskList() {
-    const taskLists = await this.task.getAllTaskList();
-    const mappedTaskLists = taskLists.map(taskList => {
-      return {
-        listName: taskList.title,
-        listId: taskList.id
-      } as ITaskList;
-    });
-    return mappedTaskLists;
+    try {
+      const taskLists = await this.task.getAllTaskList();
+      if (!Array.isArray(taskLists.content) || taskLists.error) {
+        throw new Error(`${taskLists.content}`);
+      };
+
+
+      const mappedTaskLists = taskLists.content.map(taskList => {
+        return {
+          listName: taskList.title,
+          listId: taskList.id
+        } as ITaskList;
+      });
+      return { error: false, content: mappedTaskLists };
+    } catch (error) {
+      this.log.error('Error getting task lists:', error);
+      return { error: true, content: `Failed to get task lists, ${error}` };
+    }
   }
 }
+
