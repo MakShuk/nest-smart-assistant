@@ -1,0 +1,1 @@
+GET http://localhost:2998/create-daily-schedule
