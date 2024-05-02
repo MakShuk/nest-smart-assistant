@@ -13,6 +13,7 @@ import { OpenaiAssistantService } from './openai-assistant/openai-assistant.serv
 import { TelegrafService } from './telegraf/telegraf.service';
 import { GoogleTasksApiService } from './google-tasks-api/google-tasks-api.service';
 import { CreateDailyScheduleModule } from './create-daily-schedule/create-daily-schedule.module';
+import { CreateDailyScheduleService } from './create-daily-schedule/create-daily-schedule.service';
 
 const loggerServiceProvider = {
   provide: LoggerService,
@@ -37,6 +38,7 @@ const loggerServiceProvider = {
     GoogleTasksApiService,
     TelegrafService,
     SessionService,
+    CreateDailyScheduleService
   ],
 })
-export class AppModule {}
+export class AppModule { }

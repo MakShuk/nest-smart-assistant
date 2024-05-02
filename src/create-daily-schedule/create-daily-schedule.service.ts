@@ -17,10 +17,20 @@ export class CreateDailyScheduleService {
         private readonly session: SessionService,
     ) { }
 
-    async start<T extends { from: { id: number } }>(ctx: T) {
-        const userId = ctx.from.id;
-        const message = await this.createDailySchedule(userId);
-        this.log.info(message.content);
+    async start<T extends { from: { id: number }, reply: (message: string, options?: any) => void }>(ctx: T): Promise<void> {
+            const userId = ctx.from.id;
+            const message = await this.createDailySchedule(userId);
+            this.log.info(message.content);
+
+            if (message.error) {
+                    const url = await this.task.authorization()
+                    ctx.reply(`Необходимо авторизоваться ${url}`)
+                    return null
+                }
+    
+                ctx.reply(message.content, {
+                    parse_mode: 'Markdown',
+                });
     }
 
     async createDailySchedule(userId: number) {
