@@ -1,7 +1,5 @@
 import installer from '@ffmpeg-installer/ffmpeg';
-import { rejects } from 'assert';
 import ffmpeg from 'fluent-ffmpeg';
-import { resolve } from 'path';
 
 export class OggConverter {
     constructor() {

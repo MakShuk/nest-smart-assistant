@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { LoggerService } from 'src/services/logger/logger.service';
 import { message } from 'telegraf/filters';
 import { Telegraf, session } from 'telegraf';
