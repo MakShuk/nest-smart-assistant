@@ -1,12 +1,14 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { LoggerService } from 'src/services/logger/logger.service';
 import { message } from 'telegraf/filters';
-import { Markup, Telegraf, session } from 'telegraf';
+import { Telegraf, session } from 'telegraf';
 import { Context } from 'telegraf';
+import { createWriteStream, existsSync, mkdirSync } from 'fs';
+import axios from 'axios';
 
 @Injectable()
 export class TelegrafService {
-  constructor(private readonly logger: LoggerService) {}
+  constructor(private readonly logger: LoggerService) { }
   private bot: Telegraf;
   private botRun: false | Date = false;
 
@@ -60,10 +62,43 @@ export class TelegrafService {
   }
 
   imageMessage() {
-    this.bot.on('photo', (ctx: Context) => {
+    const voiceMessageFilter = message('photo');
+    this.bot.on(voiceMessageFilter, (ctx: Context) => {
       this.logger.warn('photo');
       this.logger.warn(ctx.message);
       ctx.reply('🚧 В разработке');
+    });
+  }
+
+
+  async voiceMessage() {
+    const voiceMessageFilter = message('voice');
+
+    this.bot.on(voiceMessageFilter, async (ctx) => {
+      const fileId = ctx.message.voice.file_id;
+      const fileLink = await ctx.telegram.getFileLink(fileId);
+
+      const response = await axios({
+        method: 'get',
+        url: String(fileLink),
+        responseType: 'stream'
+      })
+      const dir = './audios';
+      if (!existsSync(dir)) {
+        mkdirSync(dir);
+      }
+
+      const writer = createWriteStream(`./audios/${fileId}.ogg`);
+
+      response.data.pipe(writer);
+
+      writer.on('finish', () => {
+        console.log('Аудио сообщение сохранено');
+      });
+
+      writer.on('error', (err: unknown) => {
+        console.log('Ошибка при сохранении аудио сообщения:', err);
+      });
     });
   }
 
@@ -88,3 +123,4 @@ export class TelegrafService {
     });
   }
 }
+

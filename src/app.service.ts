@@ -19,7 +19,7 @@ export class AppService implements OnModuleInit {
     private readonly createDailyScheduleService: CreateDailyScheduleService,
     private readonly task: GoogleTasksApiService,
     private readonly session: SessionService,
-  ) {}
+  ) { }
 
   onModuleInit(): void {
     this.bot.init();
@@ -31,25 +31,11 @@ export class AppService implements OnModuleInit {
         this.createDailyScheduleService,
       ),
     );
+
     this.bot.createCommand('reset', async (ctx) => {
       await this.session.saveSession(ctx.from.id, []);
       ctx.reply('Сессия сброшена');
     });
-    /* 
-    this.bot.createCommand('edit', async (ctx) => {
-      // Отправляем сообщение
-      const message = await ctx.reply('Исходный текст');
-
-      // Изменяем сообщение через 2 секунды
-      setTimeout(async () => {
-        await ctx.telegram.editMessageText(
-          message.chat.id,
-          message.message_id,
-          null,
-          'Измененный текст',
-        );
-      }, 2000);
-    }); */
 
     this.bot.createCommand('test', async (ctx) => {
       return ctx.reply(
@@ -128,6 +114,10 @@ export class AppService implements OnModuleInit {
         );
       }
     });
+
+    this.bot.voiceMessage();
+
+
 
     this.bot.startBot();
   }
