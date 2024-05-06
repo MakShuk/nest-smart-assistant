@@ -14,6 +14,9 @@ import { TelegrafService } from './telegraf/telegraf.service';
 import { GoogleTasksApiService } from './google-tasks-api/google-tasks-api.service';
 import { CreateDailyScheduleModule } from './create-daily-schedule/create-daily-schedule.module';
 import { CreateDailyScheduleService } from './create-daily-schedule/create-daily-schedule.service';
+import { OggConverter } from './services/converter/ogg-converter.service';
+import { TelegramCommandsModule } from './telegram-commands/telegram-commands.module';
+
 
 const loggerServiceProvider = {
   provide: LoggerService,
@@ -28,6 +31,7 @@ const loggerServiceProvider = {
     GoogleApiModule,
     TelegrafModule,
     CreateDailyScheduleModule,
+    TelegramCommandsModule,
   ],
   controllers: [AppController],
   providers: [
@@ -38,7 +42,8 @@ const loggerServiceProvider = {
     GoogleTasksApiService,
     TelegrafService,
     SessionService,
-    CreateDailyScheduleService
+    CreateDailyScheduleService,
+    OggConverter
   ],
 })
 export class AppModule { }

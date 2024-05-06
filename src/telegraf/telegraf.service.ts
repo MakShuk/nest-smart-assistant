@@ -76,6 +76,7 @@ export class TelegrafService {
 
     this.bot.on(voiceMessageFilter, async (ctx) => {
       const fileId = ctx.message.voice.file_id;
+      const userId = ctx.from.id;
       const fileLink = await ctx.telegram.getFileLink(fileId);
 
       const response = await axios({
@@ -88,7 +89,7 @@ export class TelegrafService {
         mkdirSync(dir);
       }
 
-      const writer = createWriteStream(`./audios/${fileId}.ogg`);
+      const writer = createWriteStream(`./audios/${userId}.ogg`);
 
       response.data.pipe(writer);
 

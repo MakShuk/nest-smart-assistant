@@ -8,6 +8,7 @@ import { SessionService } from './services/sessions/sessions.service';
 import { Markup } from 'telegraf';
 import { CreateDailyScheduleService } from './create-daily-schedule/create-daily-schedule.service';
 import { Stream } from 'openai/streaming';
+import { OggConverter } from './services/converter/ogg-converter.service';
 
 @Injectable()
 export class AppService implements OnModuleInit {
@@ -18,6 +19,7 @@ export class AppService implements OnModuleInit {
     private readonly createDailyScheduleService: CreateDailyScheduleService,
     private readonly task: GoogleTasksApiService,
     private readonly session: SessionService,
+    private oggConverter: OggConverter,
   ) { }
 
   onModuleInit(): void {
@@ -134,5 +136,12 @@ export class AppService implements OnModuleInit {
       console.error('Error processing message:', error);
       throw new Error('Failed to process message');
     }
+  }
+
+  async covertToMp3(inputFilePath?: string, outputFilePath?: string) {
+      const inputFile = inputFilePath || 'C:/development/NextJS/nest-smart-assistant/audios/305343617.ogg';
+      const outputFile = outputFilePath || 'C:/development/NextJS/nest-smart-assistant/audios/305343617.mp3';
+      return await this.oggConverter.convertToMp3(inputFile, outputFile); 
+   // return await this.oggConverter.init()
   }
 }
