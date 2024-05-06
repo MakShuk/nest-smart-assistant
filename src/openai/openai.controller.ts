@@ -165,4 +165,9 @@ export class OpenaiController {
     const stream: ReadStream = fs.createReadStream('audio.mp3');
     return this.openaiService.transcriptionAudio(stream);
   }
+
+  @Get('text-to-speech')
+  textToSpeech(): Promise<void> {
+    return this.openaiService.textToSpeech();
+  }
 }
