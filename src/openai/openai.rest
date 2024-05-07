@@ -1,1 +1,6 @@
 GET http://localhost:2998/openai/text-to-speech
+Content-Type: application/json
+
+{
+  "content": "Ваш текст для озвучивания"
+}

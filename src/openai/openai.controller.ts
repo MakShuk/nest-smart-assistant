@@ -167,7 +167,8 @@ export class OpenaiController {
   }
 
   @Get('text-to-speech')
-  textToSpeech(): Promise<void> {
-    return this.openaiService.textToSpeech();
+  textToSpeech(@Body() text: { content: string }): Promise<void> {
+    const textToSpeech = 'Это тестовый текст для озвучивания'
+    return this.openaiService.textToSpeech(textToSpeech);
   }
 }

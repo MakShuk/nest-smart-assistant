@@ -154,14 +154,13 @@ export class OpenaiService {
     }
   }
 
-  async textToSpeech(): Promise<void> {
+  async textToSpeech(text: string): Promise<void> {
     const speechFile = path.resolve("./speech.mp3");
     const mp3 = await this.openai.audio.speech.create({
       model: "tts-1",
       voice: "shimmer",
-      input: "Иллюзия продуктивности. Этот термин описывает ситуацию, когда человек чувствует себя занятым и кажется, что много работает, но на самом деле его действия не приносят значимого результат в плане достижения желаемых целей или улучшения эффективности. Это явление может привести к тому, что человек тратит массу времени и энергии, но не видит соответствующих улучшений в своих проектах или задачах.",
+      input: text,
     })
-    console.log(mp3);
     const buffer = Buffer.from(await mp3.arrayBuffer());
     await fs.promises.writeFile(speechFile, buffer);
   }
