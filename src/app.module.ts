@@ -16,6 +16,7 @@ import { CreateDailyScheduleModule } from './create-daily-schedule/create-daily-
 import { CreateDailyScheduleService } from './create-daily-schedule/create-daily-schedule.service';
 import { OggConverter } from './services/converter/ogg-converter.service';
 import { TelegramCommandsModule } from './telegram-commands/telegram-commands.module';
+import { CommandsService } from './services/commands/commands';
 
 
 const loggerServiceProvider = {
@@ -43,7 +44,8 @@ const loggerServiceProvider = {
     TelegrafService,
     SessionService,
     CreateDailyScheduleService,
-    OggConverter
+    OggConverter,
+    CommandsService
   ],
 })
 export class AppModule { }

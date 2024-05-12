@@ -9,6 +9,8 @@ import {
   ExtendedChatCompletionMessage,
   ITool,
 } from './openai.interface';
+import * as path from "path";
+
 
 @Controller('openai')
 export class OpenaiController {
@@ -167,7 +169,13 @@ export class OpenaiController {
   }
 
   @Get('text-to-speech')
-  textToSpeech(@Body() file: { name: string }): Promise<void> {
-    return this.openaiService.textToSpeech(file.name);
+  async textToSpeech(@Body() file: { name: string }): Promise<string> {
+    const speechFile = path.resolve(`./${file.name}.mp3`);
+    const filePath = path.join(__dirname, '..', '..', 'text-to-speech.txt');
+    const data = await fs.promises.readFile(filePath, 'utf-8');
+    console.log(data);
+    const buffer = await this.openaiService.textToSpeech(data);
+    await fs.promises.writeFile(speechFile, buffer);
+    return `Файл ${file.name}.mp3 создан`;
   }
 }

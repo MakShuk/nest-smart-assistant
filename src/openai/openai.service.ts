@@ -7,8 +7,6 @@ import {
 import { ReadStream } from 'fs';
 import { Stream } from 'openai/streaming';
 import { ExtendedChatCompletionMessage, IPrice } from './openai.interface';
-import * as path from "path";
-import * as fs from 'fs'
 
 @Injectable()
 export class OpenaiService {
@@ -154,11 +152,8 @@ export class OpenaiService {
     }
   }
 
-  async textToSpeech(fileName: string): Promise<void> {
-    const speechFile = path.resolve(`./${fileName}.mp3`);
-    const filePath = path.join(__dirname, '..', '..', 'text-to-speech.txt');
-    const data = await fs.promises.readFile(filePath, 'utf-8');
-    console.log(data);
+  async textToSpeech(data: string): Promise<Buffer> {
+
 
     const mp3 = await this.openai.audio.speech.create({
       model: "tts-1",
@@ -167,7 +162,7 @@ export class OpenaiService {
     })
 
     const buffer = Buffer.from(await mp3.arrayBuffer());
-    await fs.promises.writeFile(speechFile, buffer);
+    return buffer
   }
 
   async callFunction<T extends OpenAI.Chat.Completions.ChatCompletionTool>(

@@ -3,8 +3,9 @@ import { LoggerService } from 'src/services/logger/logger.service';
 import { message } from 'telegraf/filters';
 import { Telegraf, session } from 'telegraf';
 import { Context } from 'telegraf';
-import { createWriteStream, existsSync, mkdirSync } from 'fs';
-import axios from 'axios';
+const fs = require('fs');
+
+
 
 @Injectable()
 export class TelegrafService {
@@ -59,6 +60,12 @@ export class TelegrafService {
 
   repostMessage(callback: (ctx: Context) => void) {
     this.bot.on('message', callback);
+  }
+
+  async sendAudioMessage(ctx: Context) {
+    const filePath = 'C:\\development\\NextJS\\nest-smart-assistant\\audios\\305343617.mp3';
+    const stream = await fs.createReadStream(filePath);
+    ctx.replyWithAudio({ source: stream, filename: 'voice.mp3' });
   }
 
   imageMessage() {

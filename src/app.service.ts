@@ -6,7 +6,6 @@ import { GoogleTasksApiService } from './google-tasks-api/google-tasks-api.servi
 import { ChatCompletionMessageParamType } from './openai/openai.interface';
 import { SessionService } from './services/sessions/sessions.service';
 import { Context, Markup } from 'telegraf';
-import { CreateDailyScheduleService } from './create-daily-schedule/create-daily-schedule.service';
 import { Stream } from 'openai/streaming';
 import { OggConverter } from './services/converter/ogg-converter.service';
 import * as path from 'path';
@@ -14,6 +13,8 @@ import * as fs from 'fs';
 import { ReadStream } from 'fs';
 import axios from 'axios';
 import { Update } from 'telegraf/typings/core/types/typegram';
+import { CommandsService } from './services/commands/commands';
+
 
 @Injectable()
 export class AppService implements OnModuleInit {
@@ -21,36 +22,33 @@ export class AppService implements OnModuleInit {
     private readonly bot: TelegrafService,
     private readonly log: LoggerService,
     private readonly ai: OpenaiService,
-    private readonly createDailyScheduleService: CreateDailyScheduleService,
     private readonly task: GoogleTasksApiService,
     private readonly session: SessionService,
     private oggConverter: OggConverter,
+    private command: CommandsService
   ) { }
 
   onModuleInit(): void {
     this.bot.init();
     this.task.init();
 
-    this.bot.createCommand(
-      'start',
-      this.createDailyScheduleService.start.bind(
-        this.createDailyScheduleService,
-      ),
-    );
+    this.bot.createCommand('start', this.command.start,);
 
-    this.bot.createCommand('reset', async (ctx) => {
-      await this.session.saveSession(ctx.from.id, []);
-      ctx.reply('Сессия сброшена');
-    });
+    this.bot.createCommand('reset', this.command.reset);
 
-    this.bot.createCommand('test', async (ctx) => {
-      return ctx.reply(
-        'Режим тестирования',
-        Markup.keyboard([['/menu', 'Тест2'], ['Тест 3'], ['УУУ 4']])
-          .oneTime()
-          .resize()
-          .selective(),
-      );
+    /*     this.bot.createCommand('test', async (ctx) => {
+          console.log(ctx.message);
+          return ctx.reply(
+            'Режим тестирования',
+            Markup.keyboard([['/menu', 'Тест2'], ['Тест 3'], ['УУУ 4']])
+              .oneTime()
+              .resize()
+              .selective(),
+          );
+        }); */
+
+    this.bot.createCommand('o', async (ctx) => {
+      this.bot.sendAudioMessage(ctx)
     });
 
     this.bot.createCommand('menu', async (ctx) => {
@@ -71,56 +69,9 @@ export class AppService implements OnModuleInit {
       );
     });
 
-    this.bot.textMessage(async (ctx) => {
-      const userId = ctx.from.id;
-      if (!('text' in ctx.message)) return;
-      const sendMessage = await ctx.reply('Выполняю запрос...', {
-        parse_mode: 'Markdown',
-      });
-      const message = ctx.message?.text;
+    this.bot.textMessage(this.command.text);
 
-      let messageContent = '';
-      let lastCallTime = Date.now();
-
-      const { yourStream, secession } = await this.messageAction(
-        userId,
-        message,
-      );
-      if (yourStream instanceof Stream) {
-        //Разбираем ответ на части
-        for await (const part of yourStream) {
-          const currentTime = Date.now();
-          messageContent += part.choices[0]?.delta?.content || '';
-          if (currentTime - lastCallTime > 1000) {
-            lastCallTime = currentTime;
-            await editMessageText(ctx, messageContent);
-          }
-        }
-      }
-      await editMessageText(ctx, messageContent, true);
-      secession.push(this.ai.createAssistantMessage(messageContent));
-      this.session.saveSession(userId, secession);
-      this.log.info(messageContent);
-
-      async function editMessageText(
-        ctx: any,
-        message: string,
-        markdown = false,
-      ) {
-        if (message.trim() === '') return;
-        await ctx.telegram.editMessageText(
-          sendMessage.chat.id,
-          sendMessage.message_id,
-          null,
-          message,
-          {
-            parse_mode: markdown ? 'Markdown' : undefined,
-          },
-        );
-      }
-    });
-
-    this.bot.voiceMessage(this.audioMessage.bind(this));
+    this.bot.voiceMessage(this.command.audioMessage);
 
     this.bot.startBot();
   }
