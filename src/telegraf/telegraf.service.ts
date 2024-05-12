@@ -62,8 +62,8 @@ export class TelegrafService {
   }
 
   imageMessage() {
-    const voiceMessageFilter = message('photo');
-    this.bot.on(voiceMessageFilter, (ctx: Context) => {
+    const photoMessageFilter = message('photo');
+    this.bot.on(photoMessageFilter, (ctx: Context) => {
       this.logger.warn('photo');
       this.logger.warn(ctx.message);
       ctx.reply('🚧 В разработке');
@@ -71,36 +71,8 @@ export class TelegrafService {
   }
 
 
-  async voiceMessage() {
-    const voiceMessageFilter = message('voice');
-
-    this.bot.on(voiceMessageFilter, async (ctx) => {
-      const fileId = ctx.message.voice.file_id;
-      const userId = ctx.from.id;
-      const fileLink = await ctx.telegram.getFileLink(fileId);
-
-      const response = await axios({
-        method: 'get',
-        url: String(fileLink),
-        responseType: 'stream'
-      })
-      const dir = './audios';
-      if (!existsSync(dir)) {
-        mkdirSync(dir);
-      }
-
-      const writer = createWriteStream(`./audios/${userId}.ogg`);
-
-      response.data.pipe(writer);
-
-      writer.on('finish', () => {
-        console.log('Аудио сообщение сохранено');
-      });
-
-      writer.on('error', (err: unknown) => {
-        console.log('Ошибка при сохранении аудио сообщения:', err);
-      });
-    });
+  async voiceMessage(callback: (ctx: Context) => void) {
+    this.bot.on(message('voice'), callback);
   }
 
 

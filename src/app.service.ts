@@ -5,10 +5,15 @@ import { OpenaiService } from './openai/openai.service';
 import { GoogleTasksApiService } from './google-tasks-api/google-tasks-api.service';
 import { ChatCompletionMessageParamType } from './openai/openai.interface';
 import { SessionService } from './services/sessions/sessions.service';
-import { Markup } from 'telegraf';
+import { Context, Markup } from 'telegraf';
 import { CreateDailyScheduleService } from './create-daily-schedule/create-daily-schedule.service';
 import { Stream } from 'openai/streaming';
 import { OggConverter } from './services/converter/ogg-converter.service';
+import * as path from 'path';
+import * as fs from 'fs';
+import { ReadStream } from 'fs';
+import axios from 'axios';
+import { Update } from 'telegraf/typings/core/types/typegram';
 
 @Injectable()
 export class AppService implements OnModuleInit {
@@ -74,7 +79,6 @@ export class AppService implements OnModuleInit {
       });
       const message = ctx.message?.text;
 
-
       let messageContent = '';
       let lastCallTime = Date.now();
 
@@ -116,9 +120,7 @@ export class AppService implements OnModuleInit {
       }
     });
 
-    this.bot.voiceMessage();
-
-
+    this.bot.voiceMessage(this.audioMessage.bind(this));
 
     this.bot.startBot();
   }
@@ -138,10 +140,91 @@ export class AppService implements OnModuleInit {
     }
   }
 
-  async covertToMp3(inputFilePath?: string, outputFilePath?: string) {
-      const inputFile = inputFilePath || 'C:/development/NextJS/nest-smart-assistant/audios/305343617.ogg';
-      const outputFile = outputFilePath || 'C:/development/NextJS/nest-smart-assistant/audios/305343617.mp3';
-      return await this.oggConverter.convertToMp3(inputFile, outputFile); 
-   // return await this.oggConverter.init()
+  async audioMessage(ctx: Context<Update>) {
+    if (!('voice' in ctx.message)) return;
+    const fileId = ctx.message.voice?.file_id;
+    const userId = ctx.from.id;
+    const sendMessage = await ctx.reply('Выполняю аудио запрос...', {
+      parse_mode: 'Markdown',
+    });
+    const fileLink = await ctx.telegram.getFileLink(fileId);
+
+    const response = await axios({
+      method: 'get',
+      url: String(fileLink),
+      responseType: 'stream',
+    });
+    const dir = './audios';
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir);
+    }
+
+    const writer = fs.createWriteStream(`./audios/${userId}.ogg`);
+
+    try {
+      await new Promise((resolve, reject) => {
+        response.data.pipe(writer);
+        writer.on('finish', resolve);
+        writer.on('error', reject);
+      });
+
+      console.log('Аудио сообщение сохранено');
+    } catch (error) {
+      console.log('Ошибка при сохранении аудио сообщения:', error);
+    }
+    await this.covertToMp3(String(userId));
+
+    const readStream = fs.createReadStream(`./audios/${userId}.mp3`);
+
+    const transcription = await this.ai.transcriptionAudio(readStream);
+
+    let messageContent = '';
+    let lastCallTime = Date.now();
+
+    const { yourStream, secession } = await this.messageAction(userId, transcription.content);
+
+    if (yourStream instanceof Stream) {
+      //Разбираем ответ на части
+      for await (const part of yourStream) {
+        const currentTime = Date.now();
+        messageContent += part.choices[0]?.delta?.content || '';
+        if (currentTime - lastCallTime > 1000) {
+          lastCallTime = currentTime;
+          await editMessageText(ctx, messageContent);
+        }
+      }
+    }
+
+    await editMessageText(ctx, messageContent, true);
+    secession.push(this.ai.createAssistantMessage(messageContent));
+    this.session.saveSession(userId, secession);
+    this.log.info(messageContent);
+
+    async function editMessageText(
+      ctx: any,
+      message: string,
+      markdown = false,
+    ) {
+      if (message.trim() === '') return;
+      await ctx.telegram.editMessageText(
+        sendMessage.chat.id,
+        sendMessage.message_id,
+        null,
+        message,
+        {
+          parse_mode: markdown ? 'Markdown' : undefined,
+        },
+      );
+    }
+
+
+
+  }
+
+  async covertToMp3(userId?: string) {
+    const inputFile = `C:/development/NextJS/nest-smart-assistant/audios/${userId}.ogg`;
+    const outputFile =
+      `C:/development/NextJS/nest-smart-assistant/audios/${userId}.mp3`;
+    return await this.oggConverter.convertToMp3(inputFile, outputFile);
   }
 }

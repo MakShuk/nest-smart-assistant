@@ -154,13 +154,18 @@ export class OpenaiService {
     }
   }
 
-  async textToSpeech(text: string): Promise<void> {
-    const speechFile = path.resolve("./speech.mp3");
+  async textToSpeech(fileName: string): Promise<void> {
+    const speechFile = path.resolve(`./${fileName}.mp3`);
+    const filePath = path.join(__dirname, '..', '..', 'text-to-speech.txt');
+    const data = await fs.promises.readFile(filePath, 'utf-8');
+    console.log(data);
+
     const mp3 = await this.openai.audio.speech.create({
       model: "tts-1",
       voice: "shimmer",
-      input: text,
+      input: data,
     })
+
     const buffer = Buffer.from(await mp3.arrayBuffer());
     await fs.promises.writeFile(speechFile, buffer);
   }

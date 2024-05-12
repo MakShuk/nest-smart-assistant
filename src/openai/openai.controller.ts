@@ -12,7 +12,7 @@ import {
 
 @Controller('openai')
 export class OpenaiController {
-  constructor(private readonly openaiService: OpenaiService) {}
+  constructor(private readonly openaiService: OpenaiService) { }
 
   @Get('response')
   async response(
@@ -167,8 +167,7 @@ export class OpenaiController {
   }
 
   @Get('text-to-speech')
-  textToSpeech(@Body() text: { content: string }): Promise<void> {
-    const textToSpeech = 'Это тестовый текст для озвучивания'
-    return this.openaiService.textToSpeech(textToSpeech);
+  textToSpeech(@Body() file: { name: string }): Promise<void> {
+    return this.openaiService.textToSpeech(file.name);
   }
 }

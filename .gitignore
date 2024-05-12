@@ -59,4 +59,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 assistant.json
 tokens.json
 /audios
-speech.mp3
+*.mp3
+*.wav
+*.ogg
+text-to-speech.txt
