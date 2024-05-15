@@ -9,13 +9,15 @@ import { ChatCompletionMessageParam } from 'openai/resources';
 import axios from 'axios';
 import * as fs from 'fs';
 import { OggConverter } from '../converter/ogg-converter.service';
+import * as path from 'path';
 
 @Injectable()
 export class CommandsService {
-  constructor(private openAiService: OpenaiService,
+  constructor(
+    private openAiService: OpenaiService,
     private sessionService: SessionService,
     private oggConverter: OggConverter,
-  ) { }
+  ) {}
 
   start = (ctx: IBotContext) => {
     this.clearSession(ctx);
@@ -35,7 +37,6 @@ export class CommandsService {
 
       const message = ctx.message?.text;
       await this.streamMessage(ctx, message);
-
     } catch (error) {
       this.handleError(error, ctx);
     }
@@ -70,16 +71,46 @@ export class CommandsService {
 
     const readStream = fs.createReadStream(`./audios/${userId}.mp3`);
 
-    const transcription = await this.openAiService.transcriptionAudio(readStream);
+    const transcription =
+      await this.openAiService.transcriptionAudio(readStream);
     await this.streamMessage(ctx, transcription.content);
-  }
+  };
 
   textToSpeech = async (ctx: IBotContext) => {
-    if (!('text' in ctx.message)) return;
-    const message = ctx.message?.text;
     const userId = ctx.from.id;
+    if (!('text' in ctx.message)) return;
+    this.clearSession(ctx);
+    const message = ctx.message?.text;
+    const commandRemoved = message.replace('/o ', '');
+    ctx.reply('🔊 Сообщение преобразуется в аудио');
+    const bufferStatus = await this.openAiService.textToSpeech(commandRemoved);
+    if ('buffer' in bufferStatus) {
+      const filePath = path.join(
+        __dirname,
+        '..',
+        '..',
+        '..',
+        'audios',
+        `${userId}.mp3`,
+      );
+      await fs.promises.writeFile(filePath, bufferStatus.buffer);
+    } else {
+      ctx.reply(bufferStatus.content);
+      return;
+    }
 
-  }
+    const firstWord = commandRemoved.split(' ')[0];
+    const filePath = path.join(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      'audios',
+      `${userId}.mp3`,
+    );
+    const stream = fs.createReadStream(filePath);
+    ctx.replyWithAudio({ source: stream, filename: `${firstWord}.mp3` });
+  };
 
   private async streamMessage(ctx: IBotContext, message: string) {
     try {
@@ -87,12 +118,11 @@ export class CommandsService {
         '🔄 Подождите, идет обработка запроса...',
       );
 
-      const session: ChatCompletionMessageParam[] = await this.sessionService.getSession(ctx.from.id);
+      const session: ChatCompletionMessageParam[] =
+        await this.sessionService.getSession(ctx.from.id);
       session.push(this.openAiService.createUserMessage(message));
 
-      const streamResponse = await this.openAiService.streamResponse(
-        session,
-      );
+      const streamResponse = await this.openAiService.streamResponse(session);
 
       if ('error' in streamResponse) {
         ctx.reply(streamResponse.content);
@@ -124,8 +154,7 @@ export class CommandsService {
 
   private async covertToMp3(userId?: string) {
     const inputFile = `C:/development/NextJS/nest-smart-assistant/audios/${userId}.ogg`;
-    const outputFile =
-      `C:/development/NextJS/nest-smart-assistant/audios/${userId}.mp3`;
+    const outputFile = `C:/development/NextJS/nest-smart-assistant/audios/${userId}.mp3`;
     return await this.oggConverter.convertToMp3(inputFile, outputFile);
   }
 
@@ -152,6 +181,6 @@ export class CommandsService {
     );
   }
 
-  private clearSession = (ctx: IBotContext) => this.sessionService.saveSession(ctx.from.id, []);
-
+  private clearSession = (ctx: IBotContext) =>
+    this.sessionService.saveSession(ctx.from.id, []);
 }

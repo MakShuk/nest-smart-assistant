@@ -62,12 +62,6 @@ export class TelegrafService {
     this.bot.on('message', callback);
   }
 
-  async sendAudioMessage(ctx: Context) {
-    const filePath = 'C:\\development\\NextJS\\nest-smart-assistant\\audios\\305343617.mp3';
-    const stream = await fs.createReadStream(filePath);
-    ctx.replyWithAudio({ source: stream, filename: 'voice.mp3' });
-  }
-
   imageMessage() {
     const photoMessageFilter = message('photo');
     this.bot.on(photoMessageFilter, (ctx: Context) => {

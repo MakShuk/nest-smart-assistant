@@ -55,4 +55,15 @@ export class OpenaiAssistantController {
   ) {
     return this.openaiAssistantService.uploadFile(file.path, file.id);
   }
+
+  @Get('files')
+  async getAllFiles() {
+    return await this.openaiAssistantService.getAllfiles();
+  }
+
+  @Post('delete-file')
+  async deleteFile(@Body() fileId: string) {
+  if (!fileId) return 'Please provide a file id';
+    return await this.openaiAssistantService.deleteFile(fileId);
+  }
 }

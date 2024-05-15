@@ -57,4 +57,5 @@ export type ChatCompletionMessageParamType =
 type model =
   | 'gpt-3.5-turbo-0125'
   | 'gpt-4-turbo-preview'
-  | 'gpt-4-vision-preview';
+  | 'gpt-4-vision-preview'
+  | 'gpt-4o-2024-05-13';

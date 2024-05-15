@@ -6,7 +6,7 @@ export class AppController {
   constructor(private readonly appService: AppService) { }
 
   @Get()
-  async getHello(): Promise<unknown> {
-    return this.appService.covertToMp3()
+  async getBotStatus(): Promise<unknown> {
+    return "Bot is running"
   }
 }

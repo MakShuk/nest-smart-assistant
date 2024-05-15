@@ -1,6 +1,7 @@
-GET http://localhost:2998/openai/text-to-speech
+GET http://localhost:2998/openai/response
 Content-Type: application/json
 
 {
-  "name": "44"
+  "assistant": "turbo",
+  "content": "Раскажи о себе и до какого времени ты обучен"
 }

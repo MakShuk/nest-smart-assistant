@@ -10,9 +10,9 @@ import { ExtendedChatCompletionMessage, IPrice } from './openai.interface';
 
 @Injectable()
 export class OpenaiService {
-  constructor() { }
+  constructor() {}
   private openai: OpenAI;
-  model: IPrice['name'] = 'gpt-3.5-turbo-0125';
+  model: IPrice['name'] = 'gpt-4o-2024-05-13';
 
   async onModuleInit() {
     const openaiKey = process.env.OPEN_AI_KEY;
@@ -33,7 +33,6 @@ export class OpenaiService {
         model: this.model,
       });
       const cost = this.costCalculation(completion);
-      console.log(cost);
       return {
         ...completion.choices[0]?.message,
         cost,
@@ -94,7 +93,7 @@ export class OpenaiService {
   ): Promise<ExtendedChatCompletionMessage> {
     try {
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4-vision-preview',
+        model: this.model,
         messages: messages,
       });
       if (!completion.choices[0]?.message)
@@ -152,17 +151,33 @@ export class OpenaiService {
     }
   }
 
-  async textToSpeech(data: string): Promise<Buffer> {
-
-
-    const mp3 = await this.openai.audio.speech.create({
-      model: "tts-1",
-      voice: "shimmer",
-      input: data,
-    })
-
-    const buffer = Buffer.from(await mp3.arrayBuffer());
-    return buffer
+  async textToSpeech(
+    data: string,
+  ): Promise<{ error: boolean; content: string; buffer?: Buffer }> {
+    try {
+      const mp3 = await this.openai.audio.speech.create({
+        model: 'tts-1-hd',
+        voice: 'shimmer',
+        input: data,
+      });
+      const buffer = Buffer.from(await mp3.arrayBuffer());
+      return {
+        error: false,
+        content: `Текст успешно преобразован в речь`,
+        buffer,
+      };
+    } catch (error) {
+      if (error instanceof OpenAI.APIError) {
+        const { status, message, code, type } = error;
+        const errorMessage = `status: ${status} message: ${message} code: ${code} type: ${type}`;
+        console.error(errorMessage);
+        throw new Error(errorMessage);
+      } else {
+        const errorMessage = `Non-API error, ${error}`;
+        console.error(errorMessage);
+        return { error: true, content: errorMessage };
+      }
+    }
   }
 
   async callFunction<T extends OpenAI.Chat.Completions.ChatCompletionTool>(
@@ -257,6 +272,7 @@ export class OpenaiService {
         output: 1.5,
       },
     ];
+    console.log(completion);
     const price = prices.find((e) => e.name === completion.model);
 
     if (!price) {
