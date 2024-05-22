@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, HttpCode } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  HttpCode,
+  Delete,
+  Query,
+} from '@nestjs/common';
 import { OpenaiAssistantService } from './openai-assistant.service';
 
 interface AssistantParams {
@@ -24,28 +32,48 @@ export class OpenaiAssistantController {
   @Post('create')
   async createAssistant(
     @Body()
-    assistantParams: AssistantParams,
+    assistantParams: {
+      name: string;
+      instructions: string;
+    },
   ) {
     return await this.openaiAssistantService.createAssistant(assistantParams);
   }
 
   @Get('all')
   async getAssistantConfig() {
-    return await this.openaiAssistantService.getAssistantConfig();
+    return await this.openaiAssistantService.getAllAssistantConfig();
+  }
+
+  @Delete('delete-assistant')
+  async deleteAssistant(@Query() assistant: { id: string }) {
+    return await this.openaiAssistantService.deleteAssistant(assistant.id);
   }
 
   @Post('start')
   async startDialog(
     @Body()
-    message: Message,
+    param: {
+      message: string;
+      assistantId: string;
+      threadId: string;
+    },
   ) {
-    return await this.openaiAssistantService.startDialog(message.content);
+    return await this.openaiAssistantService.startDialog(
+      param.message,
+      param.assistantId,
+      param.threadId,
+    );
   }
 
-  @Post('reset-chat')
-  @HttpCode(204)
-  resetChat() {
-    return this.openaiAssistantService.resetThread();
+  @Post('add-file-to-assistant')
+  async addFileToAssistant(
+    @Body() param: { fileId: string; assistantId: string },
+  ) {
+    return await this.openaiAssistantService.addFileToAssistant(
+      param.assistantId,
+      param.fileId,
+    );
   }
 
   @Post('upload-file')
@@ -63,7 +91,36 @@ export class OpenaiAssistantController {
 
   @Post('delete-file')
   async deleteFile(@Body() fileId: string) {
-  if (!fileId) return 'Please provide a file id';
+    if (!fileId) return 'Please provide a file id';
     return await this.openaiAssistantService.deleteFile(fileId);
+  }
+
+  @Post('create-thread')
+  async createThread() {
+    return await this.openaiAssistantService.createThread();
+  }
+
+  @Get('all-thread')
+  async getAllThread() {
+    return await this.openaiAssistantService.getAllThread();
+  }
+
+  @Delete('delete-thread')
+  async deleteThread(@Body() threadId: string) {
+    return await this.openaiAssistantService.deleteThread(threadId);
+  }
+
+  @Post('create-vector-store')
+  async createVectorStore(
+    @Body()
+    param: {
+      name: string;
+      fileIds: string[];
+    },
+  ) {
+    return await this.openaiAssistantService.createVectorStore(
+      param.name,
+      param.fileIds,
+    );
   }
 }

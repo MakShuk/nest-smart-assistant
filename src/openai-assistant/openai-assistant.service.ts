@@ -9,6 +9,9 @@ import {
   Assistant,
   AssistantCreateParams,
 } from 'openai/resources/beta/assistants';
+import { FileObject } from 'openai/resources/files';
+import { VectorStoreFileBatch } from 'openai/resources/beta/vector-stores/file-batches';
+import { path } from '@ffmpeg-installer/ffmpeg';
 
 enum ModelType {
   GPT_3_5_TURBO_0125 = 'gpt-3.5-turbo-0125',
@@ -20,8 +23,7 @@ enum ModelType {
 export class OpenaiAssistantService implements OnModuleInit {
   constructor(private readonly logger: LoggerService) {}
   private openai: OpenAI;
-  private assistantFilePath = `C:\\development\\NextJS\\nest-smart-assistant\\configs\\assistant.json`;
-  private thread: Thread;
+  private threadFilePath = `C:\\development\\NextJS\\nest-smart-assistant\\configs\\thread.json`;
   model: ModelType = ModelType.GPT_4o_2024_05_13;
 
   async onModuleInit() {
@@ -32,35 +34,23 @@ export class OpenaiAssistantService implements OnModuleInit {
     this.openai = new OpenAI({ apiKey: openaiKey });
   }
 
-  async startDialog(newMessage: string) {
+  async startDialog(newMessage: string, assistantId: string, threadId: string) {
     try {
-      // Получаем текущий идентификатор помощника из конфигурации.
-      const currentAssistantId = (await this.getAssistantConfig())[0].id;
-
-      // Если нет текущего треда, создаем новый.
-      if (!this.thread) {
-        this.thread = await this.openai.beta.threads.create();
-      }
-
-      const thread = this.thread;
-      let lastMessage: string;
-
-      console.log('thread', thread);
-
+      let lastMessage = '';
       // Создаем сообщение от пользователя в текущем треде.
-      await this.openai.beta.threads.messages.create(thread.id, {
+      await this.openai.beta.threads.messages.create(threadId, {
         role: 'user',
         content: `${newMessage}`,
       });
 
       // Создаем новый запуск для текущего треда с идентификатором помощника.
-      const run = await this.openai.beta.threads.runs.create(thread.id, {
-        assistant_id: currentAssistantId,
+      const run = await this.openai.beta.threads.runs.create(threadId, {
+        assistant_id: assistantId,
       });
 
       // Получаем статус текущего запуска.
       let runStatus = await this.openai.beta.threads.runs.retrieve(
-        thread.id,
+        threadId,
         run.id,
       );
 
@@ -68,7 +58,7 @@ export class OpenaiAssistantService implements OnModuleInit {
       while (runStatus.status !== 'completed') {
         await this.sleep(400);
         runStatus = await this.openai.beta.threads.runs.retrieve(
-          thread.id,
+          threadId,
           run.id,
         );
         // Если статус запуска указывает на ошибку, прерываем выполнение.
@@ -80,7 +70,8 @@ export class OpenaiAssistantService implements OnModuleInit {
         }
       }
       // Получаем все сообщения в треде.
-      const messages = await this.openai.beta.threads.messages.list(thread.id);
+      const messages = await this.openai.beta.threads.messages.list(threadId);
+      console.log(messages.data);
 
       // Фильтруем сообщения, чтобы найти последнее сообщение от помощника для текущего запуска
       const lastMessageForRun = messages.data
@@ -95,133 +86,234 @@ export class OpenaiAssistantService implements OnModuleInit {
           lastMessage = lastMessageForRun.content[0].text.value;
         }
       } else if (
-        // Если статус запуска не указывает на ошибку, логируем отсутствие ответа от помощника.
+        // Если статус запуска не указывает на ошибку, лоцируем отсутствие ответа от помощника.
         !['failed', 'cancelled', 'expired'].includes(runStatus.status)
       ) {
         this.logger.error('No response received from the assistant.');
       }
-      // Возвращаем последнее сообщение.
-      return lastMessage;
+      return { data: lastMessage };
     } catch (error) {
-      // Ловим ошибки и логируем их, затем выбрасываем ошибку.
-      this.logger.error('Error starting dialog:', error);
-      throw new Error('Failed to start dialog');
+      const errorMessages = `Start dialog: ${error.message}`;
+      this.logger.error(errorMessages);
+      return { errorMessages };
     }
   }
 
-  async createAssistant(assistantParams: Partial<AssistantCreateParams>) {
+  async createAssistant(assistantParams: {
+    name: string;
+    instructions: string;
+  }) {
     try {
-      const param = this.getAssistantParams(assistantParams);
+      const param: AssistantCreateParams = {
+        name: assistantParams.name,
+        model: this.model,
+        instructions: assistantParams.instructions,
+        tools: [{ type: 'code_interpreter' }, { type: 'file_search' }],
+      };
+
       const assistant = await this.openai.beta.assistants.create(param);
-      const configs = await this.getAssistantConfig();
-      this.saveAssistantConfig([...configs, assistant]);
-      return assistant;
+      return { data: assistant };
     } catch (error) {
-      this.logger.error('Error creating assistant:', error);
-      throw new Error('Failed to create assistant');
+      const errorMessages = `Create assistant: ${error.message}`;
+      this.logger.error(errorMessages);
+      return { errorMessages };
+    }
+  }
+
+  async getAllAssistantConfig() {
+    try {
+      const assistant = await this.openai.beta.assistants.list();
+      return { data: assistant.data };
+    } catch (error) {
+      const errorMessages = `Create assistant: ${error.message}`;
+      this.logger.error(errorMessages);
+      return { errorMessages };
+    }
+  }
+
+  async addFileToAssistant(assistantId: string, fileId: string) {
+    try {
+      const configStatus = await this.getAllAssistantConfig();
+      if ('errorMessages' in configStatus) {
+        throw new Error(configStatus.errorMessages);
+      }
+
+      const assistantDetails = configStatus.data.filter(
+        (assistant) => assistant.id === assistantId,
+      )[0];
+
+      if (!assistantDetails) {
+        throw new Error('Assistant not found');
+      }
+
+      let existingFileIds =
+        assistantDetails.tool_resources.code_interpreter.file_ids;
+
+      const update = await this.openai.beta.assistants.update(assistantId, {
+        tool_resources: {
+          code_interpreter: {
+            file_ids: [...existingFileIds, fileId],
+          },
+        },
+      });
+      return { data: update };
+    } catch (error) {
+      const errorMessages = `Add file to assistant: ${error.message}`;
+      this.logger.error(errorMessages);
+      return { errorMessages };
+    }
+  }
+
+  async deleteAssistant(assistantId: string) {
+    try {
+      const assistant = await this.openai.beta.assistants.del(assistantId);
+      return { data: assistant };
+    } catch (error) {
+      const errorMessages = `Delete assistant: ${error.message}`;
+      this.logger.error(errorMessages);
+      return { errorMessages };
     }
   }
 
   async uploadFile(filePath: string, assistantId?: string) {
     try {
+      const stream = fs.createReadStream(filePath);
+
       const file = await this.openai.files.create({
-        file: fs.createReadStream(filePath),
+        file: stream,
         purpose: 'assistants',
       });
 
-      if (!assistantId) {
-        const data = await this.getAssistantConfig();
-        const assistantDetails = data.filter(
-          (assistant) => assistant.id === assistantId,
-        )[0];
-
-        if (!assistantDetails) {
-          throw new Error('Assistant not found');
+      if (assistantId) {
+        const data = await this.addFileToAssistant(assistantId, file.id);
+        if ('errorMessages' in data) {
+          throw new Error(data.errorMessages);
         }
-
-        let existingFileIds =
-          assistantDetails.tool_resources.code_interpreter.file_ids;
-
-        await this.openai.beta.assistants.update(assistantId, {
-          tool_resources: {
-            code_interpreter: {
-              file_ids: [...existingFileIds, file.id],
-            },
-          },
-        });
-
-        data[0].tool_resources.code_interpreter.file_ids = [
-          ...existingFileIds,
-          file.id,
-        ];
-
-        await this.saveAssistantConfig(data);
+        return { data };
       }
+
+      return { data: file };
     } catch (error) {
-      this.logger.error('Error uploading file:', error);
-      throw new Error('Failed to upload file');
+      const errorMessages = `Upload file: ${error.message}`;
+      this.logger.error(errorMessages);
+      return { errorMessages };
     }
   }
 
   async getAllfiles() {
     try {
       const files = await this.openai.files.list();
-      return files.data;
+      return { data: files.data };
     } catch (error) {
-      this.logger.error('Error getting files:', error);
-      throw new Error('Failed to get files');
+      const errorMessages = `All files: ${error.message}`;
+      this.logger.error(errorMessages);
+      return { errorMessages };
     }
   }
 
   async deleteFile(fileId: string) {
     try {
-      await this.openai.files.del(fileId);
+      const data = await this.openai.files.del(fileId);
+      return { data };
     } catch (error) {
-      this.logger.error('Error deleting file:', error);
-      throw new Error('Failed to delete file');
+      const errorMessages = `Delete File ${error.message}`;
+      this.logger.error(errorMessages);
+      return { errorMessages };
     }
   }
 
-  async getAssistantConfig(): Promise<Assistant[]> {
+  async getAllThread() {
     try {
-      const assistant = await this.openai.beta.assistants.list();
-      await this.saveAssistantConfig(assistant.data);
-      return assistant.data;
-    } catch (error) {
-      this.logger.error('Error reading assistant config:', error);
-      return [];
-    }
-  }
-
-  resetThread(): string {
-    this.thread = null;
-    return `reset thread`;
-  }
-
-  async saveAssistantConfig(assistantDetails: Assistant[]) {
-    try {
-      await fsPromises.writeFile(
-        this.assistantFilePath,
-        JSON.stringify(assistantDetails, null, 2),
+      const savedThread = await fsPromises.readFile(
+        this.threadFilePath,
+        'utf8',
       );
+      if (!savedThread && savedThread.length === 0) {
+        throw new Error(`No thread found in ${this.threadFilePath}`);
+      }
+
+      const threadData: Thread[] = JSON.parse(savedThread);
+      if (!(Array.isArray(threadData) && threadData.length > 0)) {
+        throw new Error(`No thread found in ${this.threadFilePath}`);
+      }
+
+      return { data: threadData };
     } catch (error) {
-      this.logger.error('Error saving assistant config:', error);
-      throw new Error('Failed to save assistant config');
+      const errorMessages = `Getting all threads: ${error.message}`;
+      this.logger.error(errorMessages);
+      return { errorMessages };
     }
   }
 
-  private getAssistantParams(
-    assistantParams: Partial<AssistantCreateParams>,
-  ): AssistantCreateParams {
-    const { name, instructions, tools, model } = assistantParams;
-    return {
-      name: name || 'Murder mystery helper',
-      instructions:
-        instructions ||
-        "You're a murder mystery assistant, helping solve murder mysteries.",
-      tools: tools,
-      model: model,
-    };
+  async createThread() {
+    try {
+      const thread = await this.openai.beta.threads.create();
+      await this.saveThread(thread);
+      return { data: thread };
+    } catch (error) {
+      const errorMessages = `Create thread: ${error.message}`;
+      this.logger.error(errorMessages);
+      return { errorMessages };
+    }
+  }
+
+  async deleteThread(threadId: string) {
+    try {
+      const threadStatus = await this.getAllThread();
+      if ('errorMessages' in threadStatus) {
+        throw new Error(threadStatus.errorMessages);
+      }
+
+      const updatedThread = threadStatus.data.filter(
+        (thread) => thread.id !== threadId,
+      );
+
+      await fsPromises.writeFile(
+        this.threadFilePath,
+        JSON.stringify(updatedThread, null, 2),
+      );
+
+      const thread = await this.openai.beta.threads.del(threadId);
+      return { data: thread };
+    } catch (error) {
+      const errorMessages = `Delete thread: ${error.message}`;
+      this.logger.error(errorMessages);
+      return { errorMessages };
+    }
+  }
+
+  async createVectorStore(name: string, fileIds: string[]) {
+    try {
+      const vectorStore = await this.openai.beta.vectorStores.create({
+        name: name,
+        file_ids: [...fileIds],
+      });
+
+      return { data: vectorStore };
+    } catch (error) {
+      const errorMessages = `Create vector store: ${error.message}`;
+      this.logger.error(errorMessages);
+      return { errorMessages };
+    }
+  }
+
+  private async saveThread(thread: Thread) {
+    try {
+      const threadStatus = await this.getAllThread();
+      if ('errorMessages' in threadStatus) {
+        throw new Error(threadStatus.errorMessages);
+      }
+
+      const updatedThread = await fsPromises.writeFile(
+        this.threadFilePath,
+        JSON.stringify([...threadStatus.data, thread], null, 2),
+      );
+      return { data: updatedThread };
+    } catch (error) {
+      const errorMessages = `Save thread: ${error.message}`;
+      this.logger.error(errorMessages);
+      return { errorMessages };
+    }
   }
 
   private sleep(ms: number) {

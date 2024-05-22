@@ -63,3 +63,4 @@ tokens.json
 *.wav
 *.ogg
 text-to-speech.txt
+configs/thread.json
