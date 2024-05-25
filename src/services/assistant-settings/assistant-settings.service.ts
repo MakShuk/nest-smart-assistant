@@ -1,19 +1,18 @@
-import path from 'path';
+import * as path from 'path';
 import { promises as fsPromises } from 'fs';
 import { LoggerService } from '../logger/logger.service';
 import { Injectable } from '@nestjs/common';
-
-interface IAssistantSettings {
-  name: string;
-  id: string;
-}
+import {
+  IAssistantSettings,
+  settingsStatusType,
+} from './assistant-settings.interface';
 
 @Injectable()
 export class AssistantSettingsService {
   constructor(private logger: LoggerService) {}
-  private saveFolderPath = path.join(__dirname, '..', '..', 'sessions');
+  private saveFolderPath = path.join(__dirname, '..', '..', '..', 'sessions');
 
-  async getSettings(sessionId: number) {
+  async getSettings(sessionId: number): Promise<settingsStatusType> {
     try {
       const session = await fsPromises.readFile(
         `${this.saveFolderPath}/a-${sessionId}.json`,
@@ -27,8 +26,9 @@ export class AssistantSettingsService {
     }
   }
 
-  async saveSettings(userId: string, settings: IAssistantSettings) {
+  async saveSettings(userId: number, settings: IAssistantSettings[]) {
     try {
+      console.log('path', this.saveFolderPath);
       const folderStatus = await this.ensureDirectoryExists(
         this.saveFolderPath,
       );
@@ -38,7 +38,7 @@ export class AssistantSettingsService {
         );
       }
       await fsPromises.writeFile(
-        `${this.saveFolderPath}/${userId}.json`,
+        `${this.saveFolderPath}/a-${userId}.json`,
         JSON.stringify(settings),
         'utf-8',
       );

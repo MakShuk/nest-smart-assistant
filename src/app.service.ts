@@ -20,14 +20,10 @@ export class AppService implements OnModuleInit {
     this.bot.createCommand('reset', this.command.reset);
     this.bot.createCommand('o', this.command.textToSpeech);
     this.bot.createCommand('files', this.assistantCommands.files);
-    this.bot.buttonAction(/button[0-9]+/, (ctx) => {
-      // ваш код для обработки нажатия кнопки
-      if ('match' in ctx && Array.isArray(ctx.match)) {
-        console.log(ctx.match[0]);
-        let lastDigitRegex = ctx.match[0].match(/\d+$/);
-        ctx.reply('Вы нажали на кнопку ' + lastDigitRegex);
-      }
-    });
+    this.bot.buttonAction(
+      /button[0-9]+/,
+      this.assistantCommands.setAssistantSettings,
+    );
     this.bot.textMessage(this.command.text);
     this.bot.voiceMessage(this.command.audioMessage);
     this.bot.startBot();
