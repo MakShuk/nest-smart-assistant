@@ -1,5 +1,6 @@
 import { promises as fsPromises } from 'fs';
 
+
 export class SessionService {
   constructor(private sessionId: string) {}
 
@@ -32,12 +33,12 @@ export class SessionService {
     }
   }
 
- private async ensureDirectoryExists(directoryPath: string) {
-  try {
-    await fsPromises.access(this.saveFolderPath);
-  } catch (error) {
-    await fsPromises.mkdir(this.saveFolderPath, { recursive: true });
+  private async ensureDirectoryExists(directoryPath: string) {
+    try {
+      await fsPromises.access(this.saveFolderPath);
+    } catch (error) {
+      await fsPromises.mkdir(this.saveFolderPath, { recursive: true });
+    }
   }
-}
 }
 
