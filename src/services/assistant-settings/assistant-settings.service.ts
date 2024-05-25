@@ -26,9 +26,11 @@ export class AssistantSettingsService {
     }
   }
 
-  async saveSettings(userId: number, settings: IAssistantSettings[]) {
+  async saveSettings(
+    userId: number,
+    settings: IAssistantSettings[],
+  ) {
     try {
-      console.log('path', this.saveFolderPath);
       const folderStatus = await this.ensureDirectoryExists(
         this.saveFolderPath,
       );
@@ -37,6 +39,7 @@ export class AssistantSettingsService {
           `Error creating directory: ${folderStatus.errorMessages}, path: ${this.saveFolderPath}`,
         );
       }
+
       await fsPromises.writeFile(
         `${this.saveFolderPath}/a-${userId}.json`,
         JSON.stringify(settings),

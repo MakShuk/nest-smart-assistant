@@ -73,13 +73,18 @@ export class AssistantCommandsService {
         );
       }
 
+      const settingsUpdate = settingsStatus.data.map((setting) => ({
+        ...setting,
+        activated: false,
+      }));
+
       if (lastDigitRegex >= 0 && lastDigitRegex < settingsStatus.data.length) {
-        settingsStatus.data[lastDigitRegex].activated = true;
+        settingsUpdate[lastDigitRegex].activated = true;
       }
 
       const saveSettingsStatus = this.settings.saveSettings(
         userId,
-        settingsStatus.data,
+        settingsUpdate,
       );
       if ('errorMessages' in saveSettingsStatus) {
         return ctx.reply(
