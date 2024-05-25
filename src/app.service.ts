@@ -28,7 +28,6 @@ export class AppService implements OnModuleInit {
         ctx.reply('Вы нажали на кнопку ' + lastDigitRegex);
       }
     });
-    //this.bot.buttonActions(this.command.start, this.assistantCommands.files);
     this.bot.textMessage(this.command.text);
     this.bot.voiceMessage(this.command.audioMessage);
     this.bot.startBot();
