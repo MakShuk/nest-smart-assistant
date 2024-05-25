@@ -14,7 +14,7 @@ import { ReadStream } from 'fs';
 import axios from 'axios';
 import { Update } from 'telegraf/typings/core/types/typegram';
 import { CommandsService } from './services/commands/commands';
-
+import { AssistantCommandsService } from './services/assistant-commands/assistant-commands.service';
 
 @Injectable()
 export class AppService implements OnModuleInit {
@@ -25,18 +25,33 @@ export class AppService implements OnModuleInit {
     private readonly task: GoogleTasksApiService,
     private readonly session: SessionService,
     private oggConverter: OggConverter,
-    private command: CommandsService
-  ) { }
+    private command: CommandsService,
+    private assistantCommands: AssistantCommandsService,
+  ) {}
 
   onModuleInit(): void {
     this.bot.init();
     this.task.init();
-
-    this.bot.createCommand('start', this.command.start,);
-
+    this.bot.createCommand('start', this.assistantCommands.assistantMenu);
     this.bot.createCommand('reset', this.command.reset);
+    this.bot.createCommand('o', this.command.textToSpeech);
+    this.bot.createCommand('files', this.assistantCommands.files);
+    this.bot.buttonAction(/button[0-9]+/, (ctx) => {
+      // ваш код для обработки нажатия кнопки
+      if ('match' in ctx && Array.isArray(ctx.match)) {
+        console.log(ctx.match[0]);
+        let lastDigitRegex = ctx.match[0].match(/\d+$/);
+        ctx.reply('Вы нажали на кнопку ' + lastDigitRegex);
+      }
+    });
+    //this.bot.buttonActions(this.command.start, this.assistantCommands.files);
+    this.bot.textMessage(this.command.text);
+    this.bot.voiceMessage(this.command.audioMessage);
+    this.bot.startBot();
+  }
+}
 
-    /*     this.bot.createCommand('test', async (ctx) => {
+/*     this.bot.createCommand('test', async (ctx) => {
           console.log(ctx.message);
           return ctx.reply(
             'Режим тестирования',
@@ -46,31 +61,3 @@ export class AppService implements OnModuleInit {
               .selective(),
           );
         }); */
-
-    this.bot.createCommand('o', this.command.textToSpeech);
-
-    this.bot.createCommand('menu', async (ctx) => {
-      return ctx.reply(
-        'Добро пожаловать!',
-        Markup.inlineKeyboard([
-          [Markup.button.callback('Кнопка 1 и Много текста', 'button1')],
-          [Markup.button.callback('Кнопка 1 и Много текста', 'button2')],
-          [Markup.button.callback('Кнопка 3', 'button3')],
-          [Markup.button.callback('Кнопка 4', 'button4')],
-          [Markup.button.callback('Кнопка 5', 'button5')],
-          [Markup.button.callback('Кнопка 6', 'button6')],
-          [Markup.button.callback('Кнопка 7', 'button7')],
-          [Markup.button.callback('Кнопка 8', 'button8')],
-          [Markup.button.callback('Кнопка 9', 'button9')],
-          [Markup.button.callback('Кнопка 10', 'button10')],
-        ]),
-      );
-    });
-
-    this.bot.textMessage(this.command.text);
-
-    this.bot.voiceMessage(this.command.audioMessage);
-
-    this.bot.startBot();
-  }
-}

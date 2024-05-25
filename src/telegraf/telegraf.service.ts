@@ -5,11 +5,9 @@ import { Telegraf, session } from 'telegraf';
 import { Context } from 'telegraf';
 const fs = require('fs');
 
-
-
 @Injectable()
 export class TelegrafService {
-  constructor(private readonly logger: LoggerService) { }
+  constructor(private readonly logger: LoggerService) {}
   private bot: Telegraf;
   private botRun: false | Date = false;
 
@@ -71,12 +69,25 @@ export class TelegrafService {
     });
   }
 
-
   async voiceMessage(callback: (ctx: Context) => void) {
     this.bot.on(message('voice'), callback);
   }
 
+  async buttonAction(action: string | RegExp, callback: (ctx: Context) => void) {
+    this.bot.action(action, callback);
+  }
 
+  async buttonActions(...callbacks: Function[]) {
+    const results = await Promise.all(
+      callbacks.map((callback) => {
+        this.bot.action(
+          'button' + (callbacks.indexOf(callback) + 1),
+          callback as any,
+        );
+      }),
+    );
+    return results;
+  }
 
   private async checkUserAccess() {
     this.bot.use(async (ctx: Context, next: () => Promise<void>) => {
@@ -97,4 +108,3 @@ export class TelegrafService {
     });
   }
 }
-

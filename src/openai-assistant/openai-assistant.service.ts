@@ -164,6 +164,23 @@ export class OpenaiAssistantService implements OnModuleInit {
     }
   }
 
+  async addVectorStoreToAssistant(assistantId: string, vectorStoreIds: string[]) {
+    try {
+      const update =  await this.openai.beta.assistants.update(assistantId, {
+        tool_resources: {
+          file_search: {
+            vector_store_ids: [...vectorStoreIds],
+          },
+        },
+      });
+      return { data: update };
+    } catch (error) {
+      const errorMessages = `Add vector store to assistant: ${error.message}`;
+      this.logger.error(errorMessages);
+      return { errorMessages };
+    }
+  }
+
   async deleteAssistant(assistantId: string) {
     try {
       const assistant = await this.openai.beta.assistants.del(assistantId);
@@ -292,6 +309,32 @@ export class OpenaiAssistantService implements OnModuleInit {
       return { data: vectorStore };
     } catch (error) {
       const errorMessages = `Create vector store: ${error.message}`;
+      this.logger.error(errorMessages);
+      return { errorMessages };
+    }
+  }
+
+  async getAllVectorStore() {
+    try {
+      const vectorStore = await this.openai.beta.vectorStores.list();
+      const completedVectorStore = vectorStore.data.filter(
+        (vector) => vector.status === 'completed',
+      );
+      return { data: completedVectorStore };
+    } catch (error) {
+      const errorMessages = `Get all vector store: ${error.message}`;
+      this.logger.error(errorMessages);
+      return { errorMessages };
+    }
+  }
+
+  async deleteVectorStore(vectorStoreId: string) {
+    try {
+      const vectorStore =
+        await this.openai.beta.vectorStores.del(vectorStoreId);
+      return { data: vectorStore };
+    } catch (error) {
+      const errorMessages = `Delete vector store: ${error.message}`;
       this.logger.error(errorMessages);
       return { errorMessages };
     }

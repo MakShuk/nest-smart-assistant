@@ -123,4 +123,29 @@ export class OpenaiAssistantController {
       param.fileIds,
     );
   }
+
+  @Post('add-vector-store-to-assistant')
+  async addVectorStoreToAssistant(
+    @Body()
+    param: {
+      vectorStoreId: string;
+      assistantId: string;
+    },
+  ) {
+    return await this.openaiAssistantService.addVectorStoreToAssistant(
+      param.assistantId,
+      [param.vectorStoreId],
+    );
+  }
+
+  @Get('all-vector-store')
+  async getAllVectorStore() {
+    return await this.openaiAssistantService.getAllVectorStore();
+  }
+
+  @Delete('delete-vector-store')
+  async deleteVectorStore(@Query() vectorStore: { id: string }) {
+    console.log(vectorStore);
+    return await this.openaiAssistantService.deleteVectorStore(vectorStore.id);
+  }
 }
