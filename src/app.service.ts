@@ -1,18 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { TelegrafService } from './telegraf/telegraf.service';
-import { LoggerService } from './services/logger/logger.service';
-import { OpenaiService } from './openai/openai.service';
 import { GoogleTasksApiService } from './google-tasks-api/google-tasks-api.service';
-import { ChatCompletionMessageParamType } from './openai/openai.interface';
-import { SessionService } from './services/sessions/sessions.service';
-import { Context, Markup } from 'telegraf';
-import { Stream } from 'openai/streaming';
-import { OggConverter } from './services/converter/ogg-converter.service';
-import * as path from 'path';
-import * as fs from 'fs';
-import { ReadStream } from 'fs';
-import axios from 'axios';
-import { Update } from 'telegraf/typings/core/types/typegram';
 import { CommandsService } from './services/commands/commands';
 import { AssistantCommandsService } from './services/assistant-commands/assistant-commands.service';
 
@@ -20,11 +8,7 @@ import { AssistantCommandsService } from './services/assistant-commands/assistan
 export class AppService implements OnModuleInit {
   constructor(
     private readonly bot: TelegrafService,
-    private readonly log: LoggerService,
-    private readonly ai: OpenaiService,
     private readonly task: GoogleTasksApiService,
-    private readonly session: SessionService,
-    private oggConverter: OggConverter,
     private command: CommandsService,
     private assistantCommands: AssistantCommandsService,
   ) {}
