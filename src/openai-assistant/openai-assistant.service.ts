@@ -1,17 +1,11 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import OpenAI from 'openai';
-
 import { Thread } from 'openai/resources/beta/threads/threads';
 import { promises as fsPromises } from 'fs';
 import * as fs from 'fs';
+import * as path from 'path';
 import { LoggerService } from 'src/services/logger/logger.service';
-import {
-  Assistant,
-  AssistantCreateParams,
-} from 'openai/resources/beta/assistants';
-import { FileObject } from 'openai/resources/files';
-import { VectorStoreFileBatch } from 'openai/resources/beta/vector-stores/file-batches';
-import { path } from '@ffmpeg-installer/ffmpeg';
+import { AssistantCreateParams } from 'openai/resources/beta/assistants';
 
 enum ModelType {
   GPT_3_5_TURBO_0125 = 'gpt-3.5-turbo-0125',
@@ -23,7 +17,13 @@ enum ModelType {
 export class OpenaiAssistantService implements OnModuleInit {
   constructor(private readonly logger: LoggerService) {}
   private openai: OpenAI;
-  private threadFilePath = `C:\\development\\NextJS\\nest-smart-assistant\\configs\\thread.json`;
+  private threadFilePath = path.join(
+    __dirname,
+    '..',
+    '..',
+    'configs',
+    'thread.json',
+  );
   model: ModelType = ModelType.GPT_4o_2024_05_13;
 
   async onModuleInit() {
@@ -164,9 +164,12 @@ export class OpenaiAssistantService implements OnModuleInit {
     }
   }
 
-  async addVectorStoreToAssistant(assistantId: string, vectorStoreIds: string[]) {
+  async addVectorStoreToAssistant(
+    assistantId: string,
+    vectorStoreIds: string[],
+  ) {
     try {
-      const update =  await this.openai.beta.assistants.update(assistantId, {
+      const update = await this.openai.beta.assistants.update(assistantId, {
         tool_resources: {
           file_search: {
             vector_store_ids: [...vectorStoreIds],
@@ -251,7 +254,7 @@ export class OpenaiAssistantService implements OnModuleInit {
 
       const threadData: Thread[] = JSON.parse(savedThread);
       if (!(Array.isArray(threadData) && threadData.length > 0)) {
-        throw new Error(`No thread found in ${this.threadFilePath}`);
+        return { data: [] };
       }
 
       return { data: threadData };
@@ -262,9 +265,17 @@ export class OpenaiAssistantService implements OnModuleInit {
     }
   }
 
-  async createThread() {
+  async createThread(vector_store_ids: string[] = []) {
     try {
-      const thread = await this.openai.beta.threads.create();
+      const settings =
+        vector_store_ids.length === 0
+          ? {}
+          : {
+              tool_resources: {
+                file_search: { vector_store_ids: [...vector_store_ids] },
+              },
+            };
+      const thread = await this.openai.beta.threads.create(settings);
       await this.saveThread(thread);
       return { data: thread };
     } catch (error) {
@@ -347,9 +358,13 @@ export class OpenaiAssistantService implements OnModuleInit {
         throw new Error(threadStatus.errorMessages);
       }
 
+      if (threadStatus.data.length === 0) {
+        threadStatus.data = [];
+      }
+
       const updatedThread = await fsPromises.writeFile(
         this.threadFilePath,
-        JSON.stringify([...threadStatus.data, thread], null, 2),
+        JSON.stringify([...(threadStatus.data || []), thread], null, 2),
       );
       return { data: updatedThread };
     } catch (error) {

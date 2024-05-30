@@ -17,15 +17,17 @@ export class AppService implements OnModuleInit {
     this.bot.init();
     this.task.init();
     this.bot.createCommand('start', this.assistantCommands.assistantMenu);
-    this.bot.createCommand('reset', this.command.reset);
+    this.bot.createCommand('reset', this.assistantCommands.reset);
     this.bot.createCommand('o', this.command.textToSpeech);
     this.bot.createCommand('files', this.assistantCommands.files);
     this.bot.buttonAction(
       /button[0-9]+/,
       this.assistantCommands.setAssistantSettings,
     );
-    this.bot.textMessage(this.command.text);
+
     this.bot.voiceMessage(this.command.audioMessage);
+    this.bot.textMessage(this.assistantCommands.text);
+      this.bot.fileMessage(this.assistantCommands.file);
     this.bot.startBot();
   }
 }

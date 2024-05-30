@@ -148,4 +148,5 @@ export class OpenaiAssistantController {
     console.log(vectorStore);
     return await this.openaiAssistantService.deleteVectorStore(vectorStore.id);
   }
+
 }

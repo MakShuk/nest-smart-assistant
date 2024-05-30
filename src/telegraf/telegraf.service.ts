@@ -73,7 +73,10 @@ export class TelegrafService {
     this.bot.on(message('voice'), callback);
   }
 
-  async buttonAction(action: string | RegExp, callback: (ctx: Context) => void) {
+  async buttonAction(
+    action: string | RegExp,
+    callback: (ctx: Context) => void,
+  ) {
     this.bot.action(action, callback);
   }
 
@@ -87,6 +90,11 @@ export class TelegrafService {
       }),
     );
     return results;
+  }
+
+  async fileMessage(callback: (ctx: Context) => void) {
+    const documentFilter = message('document');
+    this.bot.on(documentFilter, callback);
   }
 
   private async checkUserAccess() {
