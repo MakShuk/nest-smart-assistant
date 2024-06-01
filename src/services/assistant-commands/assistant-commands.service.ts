@@ -4,6 +4,9 @@ import { Context, Markup } from 'telegraf';
 import { AssistantSettingsService } from '../assistant-settings/assistant-settings.service';
 import axios from 'axios';
 import * as fs from 'fs';
+import { IBotContext } from '../commands/commands.interface';
+import { ChatCompletionMessageParam } from 'openai/resources';
+import { Message } from 'telegraf/typings/core/types/typegram';
 
 @Injectable()
 export class AssistantCommandsService {
@@ -166,7 +169,12 @@ export class AssistantCommandsService {
         );
       }
 
-      return ctx.reply(runChatStatus.data);
+      const messagesSplit = this.splitMessage(runChatStatus.data, 4096);
+
+      for (const message of messagesSplit) {
+        await ctx.reply(message);
+      }
+      return;
     } catch (error) {
       console.error('Error in message method:', error);
       return ctx.reply('⚠️ Произошла ошибка при обработке сообщения');
@@ -192,6 +200,10 @@ export class AssistantCommandsService {
   file = async (ctx: Context) => {
     try {
       if (!('document' in ctx.message)) return;
+
+      const sendMessage = await ctx.reply(
+        '🔄 Подождите, идет обработка файла...',
+      );
       const fileId = ctx.message.document.file_id;
       const fileName = ctx.message.document.file_name;
       const userId = ctx.from.id;
@@ -199,12 +211,64 @@ export class AssistantCommandsService {
 
       const link = await ctx.telegram.getFileLink(fileId);
       const filePath = `./sessions/${userId}.${fileExtension}`;
-      await this.downloadFile(`${link}`, filePath);
 
-      return ctx.reply('Файл успешно загружен');
+      await this.editMessageText(ctx, sendMessage, '🔄 Файл загружается...');
+
+      const fileSaveStatus = await this.downloadFile(`${link}`, filePath);
+      if ('errorMessages' in fileSaveStatus) {
+        return ctx.reply(fileSaveStatus.errorMessages);
+      }
+
+      const createFileStatus = await this.assistantService.uploadFile(filePath);
+      if ('errorMessages' in createFileStatus) {
+        return ctx.reply(
+          `📂 Не удалось загрузить файл ${createFileStatus.errorMessages}`,
+        );
+      }
+
+      const deleteFileStatus = this.deleteFile(filePath);
+
+      if ('errorMessages' in deleteFileStatus) {
+        return ctx.reply(deleteFileStatus.errorMessages);
+      }
+
+      await this.editMessageText(
+        ctx,
+        sendMessage,
+        '🔄 Файл загружен, обрабатывается...',
+      );
+
+      const createVectorStoreStatus =
+        await this.assistantService.createVectorStore('test file', [
+          createFileStatus.data.id,
+        ]);
+
+      if ('errorMessages' in createVectorStoreStatus) {
+        return ctx.reply(
+          `📂 Не удалось создать векторное хранилище ${createVectorStoreStatus.errorMessages}`,
+        );
+      }
+
+      const createThreadStatus = await this.assistantService.createThread([
+        createVectorStoreStatus.data.id,
+      ]);
+
+      if ('errorMessages' in createThreadStatus) {
+        return ctx.reply(
+          `📂 Не удалось создать поток ${createThreadStatus.errorMessages}`,
+        );
+      }
+
+      return await this.editMessageText(
+        ctx,
+        sendMessage,
+        '✅ Файл успешно обработан',
+      );
     } catch (error) {
       console.error('Error in file method:', error);
-      return ctx.reply('⚠️ Произошла ошибка при обработке файла');
+      return ctx.reply(
+        `⚠️ Произошла ошибка при обработке файла: ${error.message}`,
+      );
     }
   };
 
@@ -218,23 +282,116 @@ export class AssistantCommandsService {
         responseType: 'stream',
       });
 
-      return new Promise((resolve, reject) => {
-        response.data.pipe(writer);
-        let error: null | unknown = null;
-        writer.on('error', (err) => {
-          error = err;
-          writer.close();
-          reject(err);
-        });
-        writer.on('close', () => {
-          if (!error) {
-            resolve(true);
-          }
-        });
-      });
+      return new Promise<{ data: string } | { errorMessages: string }>(
+        (resolve, reject) => {
+          response.data.pipe(writer);
+          let error: null | Error = null;
+          writer.on('error', (err) => {
+            error = err;
+            writer.close();
+            reject({ errorMessages: '⚠️ Произошла ошибка при загрузке файла' });
+          });
+          writer.on('close', () => {
+            if (!error) {
+              resolve({ data: 'Файл успешно загружен' });
+            }
+          });
+        },
+      );
     } catch (error) {
       console.error('Error in downloadFile method:', error);
       throw new Error('⚠️ Произошла ошибка при загрузке файла');
     }
   }
+
+  private splitMessage(message: string, limit = 4096) {
+    var parts = [];
+    while (message.length > 0) {
+      if (message.length > limit) {
+        let part = message.slice(0, limit);
+        let cutAt = part.lastIndexOf(' ');
+        part = part.slice(0, cutAt);
+        parts.push(part);
+        message = message.slice(cutAt);
+      } else {
+        parts.push(message);
+        message = '';
+      }
+    }
+    return parts;
+  }
+
+  private deleteFile(filePath: string) {
+    try {
+      fs.unlinkSync(filePath);
+      return { data: 'Файл успешно удален' };
+    } catch (error) {
+      console.error('Error in deleteFile method:', error);
+      return {
+        errorMessages: `⚠️ Произошла ошибка при удалении файла ${error}`,
+      };
+    }
+  }
+
+  private async editMessageText(
+    ctx: Context,
+    oldMessage: Message.TextMessage,
+    newMessage: string,
+    markdown = false,
+  ) {
+    try {
+      if (newMessage.trim() === '') return;
+      await ctx.telegram.editMessageText(
+        oldMessage.chat.id,
+        oldMessage.message_id,
+        null,
+        newMessage,
+        markdown ? { parse_mode: 'Markdown' } : {},
+      );
+    } catch (error) {
+      const errorMessages = `⚠️ Произошла ошибка при редактировании сообщения: ${error.message}`;
+      console.error('Error in editMessageText method:', error);
+      throw new Error(errorMessages);
+    }
+  }
+
+  /*  private async streamMessage(ctx: IBotContext, message: string) {
+    try {
+      const sendMessage = await ctx.reply(
+        '🔄 Подождите, идет обработка запроса...',
+      );
+
+      const session: ChatCompletionMessageParam[] =
+        await this.sessionService.getSession(ctx.from.id);
+      session.push(this.openAiService.createUserMessage(message));
+
+      const streamResponse = await this.openAiService.streamResponse(session);
+
+      if ('error' in streamResponse) {
+        ctx.reply(streamResponse.content);
+        return;
+      }
+
+      let messageContent = '';
+
+      if (streamResponse instanceof Stream) {
+        let lastCallTime = Date.now();
+        for await (const part of streamResponse) {
+          const currentTime = Date.now();
+          messageContent += part.choices[0]?.delta?.content || '';
+          if (currentTime - lastCallTime > 1000) {
+            lastCallTime = currentTime;
+            await this.editMessageText(ctx, sendMessage, messageContent);
+          }
+        }
+
+        await this.editMessageText(ctx, sendMessage, messageContent, true);
+        session.push(this.openAiService.createAssistantMessage(messageContent));
+        this.sessionService.saveSession(ctx.from.id, session);
+      }
+    } catch (error) {
+      console.error(error);
+      this.handleError(error, ctx);
+    }
+  } */
 }

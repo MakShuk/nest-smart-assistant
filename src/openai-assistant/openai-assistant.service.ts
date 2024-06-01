@@ -209,7 +209,7 @@ export class OpenaiAssistantService implements OnModuleInit {
         if ('errorMessages' in data) {
           throw new Error(data.errorMessages);
         }
-        return { data };
+        return { data: file };
       }
 
       return { data: file };
