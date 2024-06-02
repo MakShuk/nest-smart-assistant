@@ -183,7 +183,11 @@ export class AssistantCommandsService {
 
   reset = async (ctx: Context) => {
     try {
-      const newThreadStatus = await this.assistantService.createThread();
+      const userId = String(ctx.from.id);
+      const newThreadStatus = await this.assistantService.createThread(
+        [],
+        userId,
+      );
 
       if ('errorMessages' in newThreadStatus) {
         return ctx.reply(

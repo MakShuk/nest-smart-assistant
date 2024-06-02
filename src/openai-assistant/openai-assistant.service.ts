@@ -17,13 +17,7 @@ enum ModelType {
 export class OpenaiAssistantService implements OnModuleInit {
   constructor(private readonly logger: LoggerService) {}
   private openai: OpenAI;
-  private threadFilePath = path.join(
-    __dirname,
-    '..',
-    '..',
-    'configs',
-    'thread.json',
-  );
+
   model: ModelType = ModelType.GPT_4o_2024_05_13;
 
   async onModuleInit() {
@@ -242,14 +236,18 @@ export class OpenaiAssistantService implements OnModuleInit {
     }
   }
 
-  async getAllThread() {
+  async getAllThread(fileName: string = 'thread') {
     try {
-      const savedThread = await fsPromises.readFile(
-        this.threadFilePath,
-        'utf8',
+      const savePath = path.join(
+        __dirname,
+        '..',
+        '..',
+        'sessions',
+        `t-${fileName}.json`,
       );
+      const savedThread = await fsPromises.readFile(savePath, 'utf8');
       if (!savedThread && savedThread.length === 0) {
-        throw new Error(`No thread found in ${this.threadFilePath}`);
+        throw new Error(`No thread found in ${savePath}`);
       }
 
       const threadData: Thread[] = JSON.parse(savedThread);
@@ -259,13 +257,19 @@ export class OpenaiAssistantService implements OnModuleInit {
 
       return { data: threadData };
     } catch (error) {
+      if (error.code === 'ENOENT') {
+        return { data: [] };
+      }
       const errorMessages = `Getting all threads: ${error.message}`;
       this.logger.error(errorMessages);
       return { errorMessages };
     }
   }
 
-  async createThread(vector_store_ids: string[] = []) {
+  async createThread(
+    vector_store_ids: string[] = [],
+    fileName: string = 'thread',
+  ) {
     try {
       const settings =
         vector_store_ids.length === 0
@@ -276,7 +280,11 @@ export class OpenaiAssistantService implements OnModuleInit {
               },
             };
       const thread = await this.openai.beta.threads.create(settings);
-      await this.saveThread(thread);
+
+      const saveStatus = await this.saveThread(thread, fileName);
+      if ('errorMessages' in saveStatus) {
+        throw new Error(saveStatus.errorMessages);
+      }
       return { data: thread };
     } catch (error) {
       const errorMessages = `Create thread: ${error.message}`;
@@ -285,8 +293,15 @@ export class OpenaiAssistantService implements OnModuleInit {
     }
   }
 
-  async deleteThread(threadId: string) {
+  async deleteThread(threadId: string, fileName: string = 'thread') {
     try {
+      const savePath = path.join(
+        __dirname,
+        '..',
+        '..',
+        'sessions',
+        `t-${fileName}.json`,
+      );
       const threadStatus = await this.getAllThread();
       if ('errorMessages' in threadStatus) {
         throw new Error(threadStatus.errorMessages);
@@ -297,7 +312,7 @@ export class OpenaiAssistantService implements OnModuleInit {
       );
 
       await fsPromises.writeFile(
-        this.threadFilePath,
+        savePath,
         JSON.stringify(updatedThread, null, 2),
       );
 
@@ -351,9 +366,16 @@ export class OpenaiAssistantService implements OnModuleInit {
     }
   }
 
-  private async saveThread(thread: Thread) {
+  private async saveThread(thread: Thread, fileName: string = 'thread') {
     try {
-      const threadStatus = await this.getAllThread();
+      const savePath = path.join(
+        __dirname,
+        '..',
+        '..',
+        'sessions',
+        `t-${fileName}.json`,
+      );
+      const threadStatus = await this.getAllThread(fileName);
       if ('errorMessages' in threadStatus) {
         throw new Error(threadStatus.errorMessages);
       }
@@ -363,9 +385,10 @@ export class OpenaiAssistantService implements OnModuleInit {
       }
 
       const updatedThread = await fsPromises.writeFile(
-        this.threadFilePath,
+        savePath,
         JSON.stringify([...(threadStatus.data || []), thread], null, 2),
       );
+      
       return { data: updatedThread };
     } catch (error) {
       const errorMessages = `Save thread: ${error.message}`;
