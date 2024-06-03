@@ -39,14 +39,12 @@ export class AssistantCommandsService {
 
   assistantMenu = async (ctx: Context) => {
     try {
-      const assistantStatus =
-        await this.assistantService.getAllAssistantConfig();
-
-      if ('errorMessages' in assistantStatus) {
-        return ctx.reply(
-          `📂 Не удалось получить список ассистентов ${assistantStatus.errorMessages}`,
-        );
-      }
+        const assistantStatus = await this.settings.getSettings(ctx.from.id);
+        if ('errorMessages' in assistantStatus) {
+          return ctx.reply(
+            `📂 Не удалось получить настройки ассистента ${assistantStatus.errorMessages}`,
+          );
+        }
 
       const updatedData = assistantStatus.data.map((item) => ({
         ...item,
@@ -66,9 +64,19 @@ export class AssistantCommandsService {
 
       const menu = assistantStatus.data
         .filter((item) => item.name)
-        .map((item, index) => [
-          Markup.button.callback(item.name, 'button' + (index + 1)),
-        ]);
+        .map((item, index) => {
+          let status: string = '';
+          console.log(item);
+          if ('activated' in item && item.activated) {
+            status = item.activated ? '✅ ' : '';
+          }
+          return [
+            Markup.button.callback(
+              `${status}${item.name}`,
+              'button' + (index + 1),
+            ),
+          ];
+        });
 
       return ctx.reply('Список ассистентов', Markup.inlineKeyboard(menu));
     } catch (error) {
@@ -111,7 +119,7 @@ export class AssistantCommandsService {
             `📂 Не удалось сохранить настройки ассистента ${saveSettingsStatus.errorMessages}`,
           );
         }
-        ctx.reply('Вы нажали на кнопку ' + lastDigitRegex);
+        ctx.reply('✅ Настройки ассистента успешно сохранены');
       }
     } catch (error) {
       console.error('Error in setAssistantSettings method:', error);
