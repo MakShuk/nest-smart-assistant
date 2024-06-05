@@ -388,7 +388,7 @@ export class OpenaiAssistantService implements OnModuleInit {
         savePath,
         JSON.stringify([...(threadStatus.data || []), thread], null, 2),
       );
-      
+
       return { data: updatedThread };
     } catch (error) {
       const errorMessages = `Save thread: ${error.message}`;

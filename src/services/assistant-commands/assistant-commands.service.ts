@@ -251,9 +251,9 @@ export class AssistantCommandsService {
       );
 
       const createVectorStoreStatus =
-        await this.assistantService.createVectorStore('test file', [
+        await this.assistantService.createVectorStore(fileName, [
           createFileStatus.data.id,
-        ]);
+        ]);  
 
       if ('errorMessages' in createVectorStoreStatus) {
         return ctx.reply(
