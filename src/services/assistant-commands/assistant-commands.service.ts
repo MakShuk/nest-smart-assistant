@@ -66,7 +66,7 @@ export class AssistantCommandsService {
         .filter((item) => item.name)
         .map((item, index) => {
           let status: string = '';
-          console.log(item);
+      ;
           if ('activated' in item && item.activated) {
             status = item.activated ? '✅ ' : '';
           }
@@ -366,44 +366,4 @@ export class AssistantCommandsService {
       throw new Error(errorMessages);
     }
   }
-
-  /*  private async streamMessage(ctx: IBotContext, message: string) {
-    try {
-      const sendMessage = await ctx.reply(
-        '🔄 Подождите, идет обработка запроса...',
-      );
-
-      const session: ChatCompletionMessageParam[] =
-        await this.sessionService.getSession(ctx.from.id);
-      session.push(this.openAiService.createUserMessage(message));
-
-      const streamResponse = await this.openAiService.streamResponse(session);
-
-      if ('error' in streamResponse) {
-        ctx.reply(streamResponse.content);
-        return;
-      }
-
-      let messageContent = '';
-
-      if (streamResponse instanceof Stream) {
-        let lastCallTime = Date.now();
-        for await (const part of streamResponse) {
-          const currentTime = Date.now();
-          messageContent += part.choices[0]?.delta?.content || '';
-          if (currentTime - lastCallTime > 1000) {
-            lastCallTime = currentTime;
-            await this.editMessageText(ctx, sendMessage, messageContent);
-          }
-        }
-
-        await this.editMessageText(ctx, sendMessage, messageContent, true);
-        session.push(this.openAiService.createAssistantMessage(messageContent));
-        this.sessionService.saveSession(ctx.from.id, session);
-      }
-    } catch (error) {
-      console.error(error);
-      this.handleError(error, ctx);
-    }
-  } */
 }

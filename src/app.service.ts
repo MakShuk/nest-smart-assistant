@@ -19,6 +19,7 @@ export class AppService implements OnModuleInit {
     this.bot.createCommand('start', this.assistantCommands.assistantMenu);
     this.bot.createCommand('reset', this.assistantCommands.reset);
     this.bot.createCommand('o', this.command.textToSpeech);
+    this.bot.createCommand('0', this.command.correctText);
     this.bot.createCommand('files', this.assistantCommands.files);
     this.bot.buttonAction(
       /button[0-9]+/,

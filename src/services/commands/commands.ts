@@ -26,6 +26,21 @@ export class CommandsService {
     );
   };
 
+  correctText = async (ctx: Context) => {
+    try {
+      if (!('text' in ctx.message)) return;
+      const message = `Исправь ошибки и расставь пунктуацию верни только исправленный текст: ${ctx.message?.text}`;
+      const responseMessage = this.openAiService.createUserMessage(message);
+      const sendResponse = await this.openAiService.response([responseMessage]);
+      if (sendResponse.error)
+        return ctx.reply(`Ошибка при исправлении ${sendResponse.content}`);
+      ctx.reply(sendResponse.content);
+    } catch (error) {
+      console.error('Error in message method:', error);
+      return ctx.reply('⚠️ Произошла ошибка при обработке сообщения');
+    }
+  };
+
   reset = (ctx: IBotContext) => {
     this.clearSession(ctx);
     ctx.reply('⤵️ Контекст сброшен, диалог начат заново');
@@ -34,7 +49,6 @@ export class CommandsService {
   text = async (ctx: IBotContext) => {
     try {
       if (!('text' in ctx.message)) return;
-
       const message = ctx.message?.text;
       await this.streamMessage(ctx, message);
     } catch (error) {
@@ -42,7 +56,10 @@ export class CommandsService {
     }
   };
 
-  audioMessage = async (ctx: IBotContext) => {
+  audioMessage = async (
+    ctx: IBotContext,
+    mode: 'text' | 'request' = 'request',
+  ) => {
     if (!('voice' in ctx.message)) return;
     const fileId = ctx.message.voice?.file_id;
     const fileLink = await ctx.telegram.getFileLink(fileId);
@@ -73,7 +90,11 @@ export class CommandsService {
 
     const transcription =
       await this.openAiService.transcriptionAudio(readStream);
-    await this.streamMessage(ctx, transcription.content);
+
+    if (mode === 'text') {
+      return transcription.content;
+    }
+    return await this.streamMessage(ctx, transcription.content);
   };
 
   textToSpeech = async (ctx: IBotContext) => {
@@ -153,8 +174,8 @@ export class CommandsService {
   }
 
   private async covertToMp3(userId?: string) {
-    const inputFile = `C:/development/NextJS/nest-smart-assistant/audios/${userId}.ogg`;
-    const outputFile = `C:/development/NextJS/nest-smart-assistant/audios/${userId}.mp3`;
+    const inputFile = path.join(__dirname, '..', '..', '..', 'audios', `${userId}.ogg`);
+    const outputFile = path.join(__dirname, '..', '..', '..', 'audios', `${userId}.mp3`);
     return await this.oggConverter.convertToMp3(inputFile, outputFile);
   }
 

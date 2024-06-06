@@ -55,6 +55,7 @@ export class OpenaiAssistantService implements OnModuleInit {
           threadId,
           run.id,
         );
+        
         // Если статус запуска указывает на ошибку, прерываем выполнение.
         if (['failed', 'cancelled', 'expired'].includes(runStatus.status)) {
           this.logger.error(
@@ -65,7 +66,6 @@ export class OpenaiAssistantService implements OnModuleInit {
       }
       // Получаем все сообщения в треде.
       const messages = await this.openai.beta.threads.messages.list(threadId);
-      console.log(messages.data);
 
       // Фильтруем сообщения, чтобы найти последнее сообщение от помощника для текущего запуска
       const lastMessageForRun = messages.data

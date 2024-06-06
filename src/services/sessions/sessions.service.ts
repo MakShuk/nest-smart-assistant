@@ -15,7 +15,7 @@ export class SessionService {
       );
       return JSON.parse(session);
     } catch (error) {
-      console.log('Session not found');
+      console.error('Session not found');
       return [];
     }
   }

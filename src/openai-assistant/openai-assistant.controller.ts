@@ -145,7 +145,6 @@ export class OpenaiAssistantController {
 
   @Delete('delete-vector-store')
   async deleteVectorStore(@Query() vectorStore: { id: string }) {
-    console.log(vectorStore);
     return await this.openaiAssistantService.deleteVectorStore(vectorStore.id);
   }
 

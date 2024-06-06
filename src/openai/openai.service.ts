@@ -193,7 +193,7 @@ export class OpenaiService {
       });
       const responseMessage = response.choices[0].message;
       const toolCalls = responseMessage.tool_calls;
-      console.log(this.costCalculation(response));
+   
 
       if (!responseMessage.tool_calls) {
         throw new Error(`Tool calls not found in response: ${responseMessage}`);
@@ -272,7 +272,7 @@ export class OpenaiService {
         output: 1.5,
       },
     ];
-    console.log(completion);
+  
     const price = prices.find((e) => e.name === completion.model);
 
     if (!price) {

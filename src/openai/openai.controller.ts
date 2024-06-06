@@ -27,7 +27,6 @@ export class OpenaiController {
     messages.push(this.openaiService.createUserMessage(`${text.content}`));
     const response = await this.openaiService.response(messages);
     if (response.error) console.error(`Ошибка: ${response.content}`);
-    console.log(response);
     return response;
   }
 
@@ -174,7 +173,7 @@ export class OpenaiController {
     const speechFile = path.resolve(`./${file.name}.mp3`);
     const filePath = path.join(__dirname, '..', '..', 'text-to-speech.txt');
     const data = await fs.promises.readFile(filePath, 'utf-8');
-    console.log(data);
+
     const bufferStatus = await this.openaiService.textToSpeech(data);
     if ('buffer' in bufferStatus) {
       await fs.promises.writeFile(speechFile, bufferStatus.buffer);
