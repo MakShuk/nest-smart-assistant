@@ -4,15 +4,16 @@ import { Context, Markup } from 'telegraf';
 import { AssistantSettingsService } from '../assistant-settings/assistant-settings.service';
 import axios from 'axios';
 import * as fs from 'fs';
-import { IBotContext } from '../commands/commands.interface';
-import { ChatCompletionMessageParam } from 'openai/resources';
+import * as path from 'path';
 import { Message } from 'telegraf/typings/core/types/typegram';
+import { OggConverter } from '../converter/ogg-converter.service';
 
 @Injectable()
 export class AssistantCommandsService {
   constructor(
     private assistantService: OpenaiAssistantService,
     private settings: AssistantSettingsService,
+    private oggConverter: OggConverter,
   ) {}
 
   files = async (ctx: Context) => {
@@ -39,12 +40,12 @@ export class AssistantCommandsService {
 
   assistantMenu = async (ctx: Context) => {
     try {
-        const assistantStatus = await this.settings.getSettings(ctx.from.id);
-        if ('errorMessages' in assistantStatus) {
-          return ctx.reply(
-            `📂 Не удалось получить настройки ассистента ${assistantStatus.errorMessages}`,
-          );
-        }
+      const assistantStatus = await this.settings.getSettings(ctx.from.id);
+      if ('errorMessages' in assistantStatus) {
+        return ctx.reply(
+          `📂 Не удалось получить настройки ассистента ${assistantStatus.errorMessages}`,
+        );
+      }
 
       const updatedData = assistantStatus.data.map((item) => ({
         ...item,
@@ -66,7 +67,6 @@ export class AssistantCommandsService {
         .filter((item) => item.name)
         .map((item, index) => {
           let status: string = '';
-      ;
           if ('activated' in item && item.activated) {
             status = item.activated ? '✅ ' : '';
           }
@@ -143,12 +143,16 @@ export class AssistantCommandsService {
         return ctx.reply('⚠️ Ассистент не выбран');
       }
 
-      let threadStatus = await this.assistantService.getAllThread();
+      let threadStatus = await this.assistantService.getAllThread(
+        `${ctx.from.id}`,
+      );
       if ('errorMessages' in threadStatus) {
         return ctx.reply(
           `📂 Не удалось получить доступ к потокам ${threadStatus.errorMessages}`,
         );
       }
+
+      const sendMessage = await ctx.reply('🔄 Подождите, ответ формируется...');
 
       if (threadStatus.data.length === 0) {
         const newThreadStatus = await this.assistantService.createThread();
@@ -253,7 +257,7 @@ export class AssistantCommandsService {
       const createVectorStoreStatus =
         await this.assistantService.createVectorStore(fileName, [
           createFileStatus.data.id,
-        ]);  
+        ]);
 
       if ('errorMessages' in createVectorStoreStatus) {
         return ctx.reply(
@@ -261,9 +265,10 @@ export class AssistantCommandsService {
         );
       }
 
-      const createThreadStatus = await this.assistantService.createThread([
-        createVectorStoreStatus.data.id,
-      ]);
+      const createThreadStatus = await this.assistantService.createThread(
+        [createVectorStoreStatus.data.id],
+        `${userId}`,
+      );
 
       if ('errorMessages' in createThreadStatus) {
         return ctx.reply(
@@ -281,6 +286,62 @@ export class AssistantCommandsService {
       return ctx.reply(
         `⚠️ Произошла ошибка при обработке файла: ${error.message}`,
       );
+    }
+  };
+
+  audioMessage = async (ctx: Context) => {
+    try {
+      if (!('voice' in ctx.message)) return;
+      const sendMessage = await ctx.reply(
+        '🔄 Подождите, идет обработка аудио...',
+      );
+
+      console.log('audioMessage');
+      const fileId = ctx.message.voice?.file_id;
+      const fileLink = await ctx.telegram.getFileLink(fileId);
+      const userId = ctx.from.id;
+
+      const response = await axios({
+        method: 'get',
+        url: String(fileLink),
+        responseType: 'stream',
+      });
+
+      const dir = './audios';
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+      }
+
+      const writer = fs.createWriteStream(`./audios/${userId}.ogg`);
+
+      await new Promise((resolve, reject) => {
+        response.data.pipe(writer);
+        writer.on('finish', resolve);
+        writer.on('error', reject);
+      });
+
+      await this.covertToMp3(String(userId));
+
+      const readStream = fs.createReadStream(`./audios/${userId}.mp3`);
+
+      const transcription =
+        await this.assistantService.transcriptionAudio(readStream);
+
+      if ('errorMessages' in transcription) {
+        return ctx.reply(
+          `📂 Не удалось преобразовать аудио в текст ${transcription.errorMessages}`,
+        );
+      }
+
+      (ctx as Context & { message: { text: string } }).message.text =
+        transcription.data;
+
+      await this.editMessageText(ctx, sendMessage, '', false, true);
+
+      return await this.text(ctx);
+    } catch (error) {
+      console.error('Error in audioMessage method:', error);
+      return ctx.reply('⚠️ Произошла ошибка при обработке аудиосообщения');
     }
   };
 
@@ -350,9 +411,18 @@ export class AssistantCommandsService {
     oldMessage: Message.TextMessage,
     newMessage: string,
     markdown = false,
+    deleteMessage = false,
   ) {
     try {
       if (newMessage.trim() === '') return;
+      if (deleteMessage) {
+        await ctx.telegram.deleteMessage(
+          oldMessage.chat.id,
+          oldMessage.message_id,
+        );
+        console.log('сообщение удалено');
+        return;
+      }
       await ctx.telegram.editMessageText(
         oldMessage.chat.id,
         oldMessage.message_id,
@@ -365,5 +435,25 @@ export class AssistantCommandsService {
       console.error('Error in editMessageText method:', error);
       throw new Error(errorMessages);
     }
+  }
+
+  private async covertToMp3(userId?: string) {
+    const inputFile = path.join(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      'audios',
+      `${userId}.ogg`,
+    );
+    const outputFile = path.join(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      'audios',
+      `${userId}.mp3`,
+    );
+    return await this.oggConverter.convertToMp3(inputFile, outputFile);
   }
 }

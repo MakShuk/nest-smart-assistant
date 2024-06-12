@@ -101,8 +101,8 @@ export class OpenaiAssistantController {
   }
 
   @Get('all-thread')
-  async getAllThread() {
-    return await this.openaiAssistantService.getAllThread();
+  async getAllThread(@Body() user: { id: string }) {
+    return await this.openaiAssistantService.getAllThread(user.id);
   }
 
   @Delete('delete-thread')
@@ -148,4 +148,29 @@ export class OpenaiAssistantController {
     return await this.openaiAssistantService.deleteVectorStore(vectorStore.id);
   }
 
+  @Get('test')
+  async test(
+    @Body()
+    param: {
+      message: string;
+      assistantId: string;
+      threadId: string;
+    },
+  ) {
+    const streamStatus =  await this.openaiAssistantService.streamResponse(
+      param.message,
+      param.assistantId,
+      param.threadId,
+    );
+
+    if ('errorMessages' in streamStatus) {
+      return streamStatus;
+    }
+
+    streamStatus.data.on('textDelta', (textDelta, _) =>
+      { console.log(textDelta.value);}
+    );
+
+
+  }
 }

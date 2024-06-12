@@ -55,13 +55,13 @@ export class OpenaiAssistantService implements OnModuleInit {
           threadId,
           run.id,
         );
-        
+
         // Если статус запуска указывает на ошибку, прерываем выполнение.
         if (['failed', 'cancelled', 'expired'].includes(runStatus.status)) {
           this.logger.error(
             `Run status is '${runStatus.status}'. Unable to complete the request.`,
           );
-          break;
+          throw Error(runStatus.last_error?.message);
         }
       }
       // Получаем все сообщения в треде.
@@ -366,6 +366,46 @@ export class OpenaiAssistantService implements OnModuleInit {
     }
   }
 
+  async transcriptionAudio(audioStream: fs.ReadStream) {
+    try {
+      const response = await this.openai.audio.transcriptions.create({
+        model: 'whisper-1',
+        file: audioStream,
+      });
+      return {
+        data: response.text,
+      };
+    } catch (error) {
+      const errorMessages = `Delete vector store: ${error.message}`;
+      this.logger.error(errorMessages);
+      return { errorMessages };
+    }
+  }
+
+  async streamResponse(
+    newMessage: string,
+    assistantId: string,
+    threadId: string,
+  ) {
+    try {
+      await this.openai.beta.threads.messages.create(threadId, {
+        role: 'user',
+        content: `${newMessage}`,
+      });
+
+      const stream =  this.openai.beta.threads.runs.stream(threadId, {
+        assistant_id: assistantId,
+      });
+
+      return { data: stream };
+          
+    } catch (error) {
+      const errorMessages = `Test run: ${error.message}`;
+      this.logger.error(errorMessages);
+      return { errorMessages };
+    }
+  }
+
   private async saveThread(thread: Thread, fileName: string = 'thread') {
     try {
       const savePath = path.join(
@@ -399,5 +439,9 @@ export class OpenaiAssistantService implements OnModuleInit {
 
   private sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private printResponse(textDelta: any) {
+    console.log(textDelta.value);
   }
 }
