@@ -440,8 +440,4 @@ export class OpenaiAssistantService implements OnModuleInit {
   private sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
-
-  private printResponse(textDelta: any) {
-    console.log(textDelta.value);
-  }
 }

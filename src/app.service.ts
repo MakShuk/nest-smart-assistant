@@ -27,7 +27,7 @@ export class AppService implements OnModuleInit {
     );
 
     this.bot.voiceMessage(this.assistantCommands.audioMessage);
-    this.bot.textMessage(this.assistantCommands.text);
+    this.bot.textMessage(this.assistantCommands.streamText);
       this.bot.fileMessage(this.assistantCommands.file);
     this.bot.startBot();
   }

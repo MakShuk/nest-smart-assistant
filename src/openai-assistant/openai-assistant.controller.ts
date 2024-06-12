@@ -170,7 +170,5 @@ export class OpenaiAssistantController {
     streamStatus.data.on('textDelta', (textDelta, _) =>
       { console.log(textDelta.value);}
     );
-
-
   }
 }

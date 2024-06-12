@@ -193,6 +193,81 @@ export class AssistantCommandsService {
     }
   };
 
+  streamText = async (ctx: Context) => {
+    if (!('text' in ctx.message)) return;
+
+    const assistantStatus = await this.settings.getSettings(ctx.from.id);
+    if ('errorMessages' in assistantStatus) {
+      return ctx.reply(
+        `📂 Не удалось получить настройки ассистента ${assistantStatus.errorMessages}`,
+      );
+    }
+
+    const assistant = assistantStatus.data.find((item) => item.activated);
+    if (!assistant) {
+      return ctx.reply('⚠️ Ассистент не выбран');
+    }
+
+    let threadStatus = await this.assistantService.getAllThread(
+      `${ctx.from.id}`,
+    );
+    if ('errorMessages' in threadStatus) {
+      return ctx.reply(
+        `📂 Не удалось получить доступ к потокам ${threadStatus.errorMessages}`,
+      );
+    }
+
+    const sendMessage = await ctx.reply('🔄 Подождите, ответ формируется...');
+
+    if (threadStatus.data.length === 0) {
+      const newThreadStatus = await this.assistantService.createThread();
+      threadStatus.data[0] = newThreadStatus.data;
+      if ('errorMessages' in newThreadStatus) {
+        return ctx.reply(
+          `📂 Не удалось создать новый поток ${newThreadStatus.errorMessages}`,
+        );
+      }
+    }
+
+    const lastThread = threadStatus.data.reduce(
+      (max, current) => (current.created_at > max.created_at ? current : max),
+      threadStatus.data[0],
+    );
+
+    const runChatStatus = await this.assistantService.streamResponse(
+      ctx.message.text,
+      assistant.id,
+      lastThread.id,
+    );
+
+    if ('errorMessages' in runChatStatus) {
+      return ctx.reply(
+        `📂 Не удалось запустить диалог ${runChatStatus.errorMessages}`,
+      );
+    }
+
+    const stream = runChatStatus.data;
+
+    let textInStream = '';
+    let lastCallTime = Date.now();
+
+    stream.on('textDelta', async (textDelta, _) => {
+      textInStream += textDelta.value;
+      const currentTime = Date.now();
+      if (currentTime - lastCallTime > 1000) {
+        lastCallTime = currentTime;
+        await this.editMessageText(ctx, sendMessage, textInStream);
+      }
+    });
+
+    await new Promise((resolve, reject) => {
+      stream.on('end', () => resolve('end'));
+      stream.on('error', reject);
+    });
+
+    ctx.reply(textInStream);
+  };
+
   reset = async (ctx: Context) => {
     try {
       const userId = String(ctx.from.id);
@@ -338,7 +413,7 @@ export class AssistantCommandsService {
 
       await this.editMessageText(ctx, sendMessage, '', false, true);
 
-      return await this.text(ctx);
+      return await this.streamText(ctx);
     } catch (error) {
       console.error('Error in audioMessage method:', error);
       return ctx.reply('⚠️ Произошла ошибка при обработке аудиосообщения');
