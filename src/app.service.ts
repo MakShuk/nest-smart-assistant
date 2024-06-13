@@ -4,6 +4,7 @@ import { GoogleTasksApiService } from './google-tasks-api/google-tasks-api.servi
 import { CommandsService } from './services/commands/commands';
 import { AssistantCommandsService } from './services/assistant-commands/assistant-commands.service';
 
+
 @Injectable()
 export class AppService implements OnModuleInit {
   constructor(
@@ -28,7 +29,7 @@ export class AppService implements OnModuleInit {
 
     this.bot.voiceMessage(this.assistantCommands.audioMessage);
     this.bot.textMessage(this.assistantCommands.streamText);
-      this.bot.fileMessage(this.assistantCommands.file);
+    this.bot.fileMessage(this.assistantCommands.file);
     this.bot.startBot();
   }
 }

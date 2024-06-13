@@ -217,7 +217,7 @@ export class AssistantCommandsService {
       );
     }
 
-    const sendMessage = await ctx.reply('🔄 Подождите, ответ формируется...');
+    let sendMessage = await ctx.reply('🔄 Подождите, ответ формируется...');
 
     if (threadStatus.data.length === 0) {
       const newThreadStatus = await this.assistantService.createThread();
@@ -248,15 +248,25 @@ export class AssistantCommandsService {
 
     const stream = runChatStatus.data;
 
-    let textInStream = '';
+    let textInStream = ``;
     let lastCallTime = Date.now();
 
+    let messagesSplit: string[] = [];
+
     stream.on('textDelta', async (textDelta, _) => {
-      textInStream += textDelta.value;
+      textInStream += textDelta.value || '';
       const currentTime = Date.now();
+      messagesSplit = this.splitMessage(textInStream, 3900);
       if (currentTime - lastCallTime > 1000) {
         lastCallTime = currentTime;
-        await this.editMessageText(ctx, sendMessage, textInStream);
+        if (messagesSplit.length > 1) {
+          messagesSplit = this.splitMessage(textInStream, 3900);
+          await this.editMessageText(ctx, sendMessage, messagesSplit[0]);
+          sendMessage = await ctx.reply(`Обработка сообщения...`);
+          textInStream = messagesSplit[1];
+        } else {
+          await this.editMessageText(ctx, sendMessage, messagesSplit[0]);
+        }
       }
     });
 
@@ -265,7 +275,8 @@ export class AssistantCommandsService {
       stream.on('error', reject);
     });
 
-    ctx.reply(textInStream);
+    await this.editMessageText(ctx, sendMessage, textInStream);
+
   };
 
   reset = async (ctx: Context) => {
@@ -490,6 +501,7 @@ export class AssistantCommandsService {
   ) {
     try {
       if (newMessage.trim() === '') return;
+      if (oldMessage.text === newMessage) return;
       if (deleteMessage) {
         await ctx.telegram.deleteMessage(
           oldMessage.chat.id,
