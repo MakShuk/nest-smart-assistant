@@ -20,10 +20,6 @@ ADD package.json ./
 RUN npm install --only=prod
 # Копируем собранный код из предыдущего этапа в директорию dist текущего контейнера
 COPY --from=build /opt/app/dist  ./dist
-# Копируем файл prisma из предыдущего этапа в текущий контейнер 
-COPY --from=build /opt/app/prisma  ./prisma
-# Создаем миграцию
-RUN npx prisma generate
 # Запускаем приложение
 CMD [ "node", "./dist/main.js" ]
 
