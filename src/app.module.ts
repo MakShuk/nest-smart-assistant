@@ -19,6 +19,9 @@ import { TelegramCommandsModule } from './telegram-commands/telegram-commands.mo
 import { CommandsService } from './services/commands/commands';
 import { AssistantSettingsService } from './services/assistant-settings/assistant-settings.service';
 import { AssistantCommandsService } from './services/assistant-commands/assistant-commands.service';
+import { APP_GUARD } from '@nestjs/core';
+import { AuthGuard } from './auth/auth.guard';
+import { AuthModule } from './auth/auth.module';
 
 const loggerServiceProvider = {
   provide: LoggerService,
@@ -28,6 +31,7 @@ const loggerServiceProvider = {
 @Module({
   imports: [
     ConfigModule.forRoot(),
+    AuthModule,
     OpenaiModule,
     OpenaiAssistantModule,
     GoogleApiModule,
@@ -37,6 +41,10 @@ const loggerServiceProvider = {
   ],
   controllers: [AppController],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    },
     AppService,
     loggerServiceProvider,
     OpenaiService,
