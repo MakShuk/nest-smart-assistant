@@ -15,7 +15,6 @@ import { GoogleTasksApiService } from './google-tasks-api/google-tasks-api.servi
 import { CreateDailyScheduleModule } from './create-daily-schedule/create-daily-schedule.module';
 import { CreateDailyScheduleService } from './create-daily-schedule/create-daily-schedule.service';
 import { OggConverter } from './services/converter/ogg-converter.service';
-import { TelegramCommandsModule } from './telegram-commands/telegram-commands.module';
 import { CommandsService } from './services/commands/commands';
 import { AssistantSettingsService } from './services/assistant-settings/assistant-settings.service';
 import { AssistantCommandsService } from './services/assistant-commands/assistant-commands.service';
@@ -37,7 +36,6 @@ const loggerServiceProvider = {
     GoogleApiModule,
     TelegrafModule,
     CreateDailyScheduleModule,
-    TelegramCommandsModule,
   ],
   controllers: [AppController],
   providers: [
