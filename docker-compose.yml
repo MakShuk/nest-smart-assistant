@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  api-gpt:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: Smart-Assistant-Bot
+    ports:
+      - 2998:2998
+    restart: always
+    networks:
+      - home
+networks:
+  home:
+    driver: bridge
