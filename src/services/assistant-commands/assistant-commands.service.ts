@@ -312,7 +312,7 @@ export class AssistantCommandsService {
       const fileExtension = fileName.split('.').pop();
 
       const link = await ctx.telegram.getFileLink(fileId);
-      const filePath = `./sessions/${userId}.${fileExtension}`;
+      const filePath = `./sessions/${userId}-${fileName}.${fileExtension}`;
 
       await this.editMessageText(ctx, sendMessage, '🔄 Файл загружается...');
 

@@ -148,8 +148,8 @@ export class OpenaiAssistantController {
     return await this.openaiAssistantService.deleteVectorStore(vectorStore.id);
   }
 
-  @Get('test')
-  async test(
+  @Get('stream-response')
+  async streamResponse(
     @Body()
     param: {
       message: string;
@@ -157,7 +157,7 @@ export class OpenaiAssistantController {
       threadId: string;
     },
   ) {
-    const streamStatus =  await this.openaiAssistantService.streamResponse(
+    const streamStatus = await this.openaiAssistantService.streamResponse(
       param.message,
       param.assistantId,
       param.threadId,
@@ -167,8 +167,49 @@ export class OpenaiAssistantController {
       return streamStatus;
     }
 
-    streamStatus.data.on('textDelta', (textDelta, _) =>
-      { console.log(textDelta.value);}
-    );
+    streamStatus.data.on('textDelta', (textDelta, _) => {
+      console.log(textDelta.value);
+    });
+  }
+
+  @Delete('delete-all-vector-store')
+  async deleteAllVectorStore() {
+    const responseStatus =
+      await this.openaiAssistantService.getAllVectorStore();
+    if (`errorMessages` in responseStatus) {
+      return responseStatus;
+    }
+    if (responseStatus.data.length === 0) {
+      return 'There is no vector store to delete';
+    }
+    for (const vectorStore of responseStatus.data) {
+      console.log(`Deleting vector store ${vectorStore.id}`);
+      const deleteStatus = await this.openaiAssistantService.deleteVectorStore(
+        vectorStore.id,
+      );
+      if (`errorMessages` in deleteStatus) {
+        console.log(deleteStatus);
+      }
+    }
+    return 'All vector store has been deleted';
+  }
+
+  @Delete('delete-all-file')
+  async deleteAllFile() {
+    const responseStatus = await this.openaiAssistantService.getAllfiles();
+    if (`errorMessages` in responseStatus) {
+      return responseStatus;
+    }
+    if (responseStatus.data.length === 0) {
+      return 'There is no file to delete';
+    }
+    for (const file of responseStatus.data) {
+      console.log(`Deleting file ${file.id}`);
+      const deleteStatus = await this.openaiAssistantService.deleteFile(file.id);
+      if (`errorMessages` in deleteStatus) {
+        console.log(deleteStatus);
+      }
+    }
+    return 'All files has been deleted';
   }
 }
