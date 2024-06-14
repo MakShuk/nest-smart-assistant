@@ -40,11 +40,27 @@ export class AssistantCommandsService {
 
   assistantMenu = async (ctx: Context) => {
     try {
-      const assistantStatus = await this.settings.getSettings(ctx.from.id);
+      const defaultAssistantParams = {
+        name: `default`,
+        instructions: `Бот для дружеского общения с пользователем с именем ${ctx.from.first_name}`,
+      };
+
+      let assistantStatus = await this.settings.getAssistantSettings(
+        ctx.from.id,
+      );
       if ('errorMessages' in assistantStatus) {
-        return ctx.reply(
-          `📂 Не удалось получить настройки ассистента ${assistantStatus.errorMessages}`,
+        let newAssistantStatus = await this.assistantService.createAssistant(
+          defaultAssistantParams,
         );
+
+        if ('errorMessages' in newAssistantStatus) {
+          return ctx.reply(
+            `📂 Не удалось получить настройки ассистента ${newAssistantStatus.errorMessages}`,
+          );
+        }
+        assistantStatus.data = [
+          { ...newAssistantStatus.data, activated: true },
+        ];
       }
 
       const updatedData = assistantStatus.data.map((item) => ({
@@ -90,7 +106,7 @@ export class AssistantCommandsService {
       const userId = ctx.from.id;
       if ('match' in ctx && Array.isArray(ctx.match)) {
         let lastDigitRegex = ctx.match[0].match(/\d+$/) - 1;
-        const settingsStatus = await this.settings.getSettings(userId);
+        const settingsStatus = await this.settings.getAssistantSettings(userId);
 
         if ('errorMessages' in settingsStatus) {
           return ctx.reply(
@@ -131,7 +147,9 @@ export class AssistantCommandsService {
     try {
       if (!('text' in ctx.message)) return;
 
-      const assistantStatus = await this.settings.getSettings(ctx.from.id);
+      const assistantStatus = await this.settings.getAssistantSettings(
+        ctx.from.id,
+      );
       if ('errorMessages' in assistantStatus) {
         return ctx.reply(
           `📂 Не удалось получить настройки ассистента ${assistantStatus.errorMessages}`,
@@ -196,7 +214,9 @@ export class AssistantCommandsService {
   streamText = async (ctx: Context) => {
     if (!('text' in ctx.message)) return;
 
-    const assistantStatus = await this.settings.getSettings(ctx.from.id);
+    const assistantStatus = await this.settings.getAssistantSettings(
+      ctx.from.id,
+    );
     if ('errorMessages' in assistantStatus) {
       return ctx.reply(
         `📂 Не удалось получить настройки ассистента ${assistantStatus.errorMessages}`,
@@ -276,7 +296,6 @@ export class AssistantCommandsService {
     });
 
     await this.editMessageText(ctx, sendMessage, textInStream);
-
   };
 
   reset = async (ctx: Context) => {

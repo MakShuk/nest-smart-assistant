@@ -20,8 +20,11 @@ ADD package.json ./
 RUN npm install --only=prod
 # Копируем собранный код из предыдущего этапа в директорию dist текущего контейнера
 COPY --from=build /opt/app/dist  ./dist
+# Копируем файл .env в директорию app
+COPY --from=build /opt/app/.env  ./
 # Запускаем приложение
 CMD [ "node", "./dist/main.js" ]
+
 
 
 #docker image build -t telegram_bot_image .

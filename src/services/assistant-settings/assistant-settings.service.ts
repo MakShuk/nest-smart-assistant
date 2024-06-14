@@ -12,7 +12,7 @@ export class AssistantSettingsService {
   constructor(private logger: LoggerService) {}
   private saveFolderPath = path.join(__dirname, '..', '..', '..', 'sessions');
 
-  async getSettings(sessionId: number): Promise<settingsStatusType> {
+  async getAssistantSettings(sessionId: number): Promise<settingsStatusType> {
     try {
       const session = await fsPromises.readFile(
         `${this.saveFolderPath}/a-${sessionId}.json`,
@@ -20,16 +20,13 @@ export class AssistantSettingsService {
       );
       return { data: JSON.parse(session) };
     } catch (error) {
-      const errorMessages = `Create vector store: ${error.message}`;
+      const errorMessages = `${error.message}`;
       this.logger.error(errorMessages);
       return { errorMessages };
     }
   }
 
-  async saveSettings(
-    userId: number,
-    settings: IAssistantSettings[],
-  ) {
+  async saveSettings(userId: number, settings: IAssistantSettings[]) {
     try {
       const folderStatus = await this.ensureDirectoryExists(
         this.saveFolderPath,
