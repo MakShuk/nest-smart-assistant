@@ -53,6 +53,17 @@ export class AssistantCommandsService {
           defaultAssistantParams,
         );
 
+        const newThreadStatus = await this.assistantService.createThread(
+          [],
+          `${ctx.from.id}`,
+        );
+
+        if ('errorMessages' in newThreadStatus) {
+          return ctx.reply(
+            `📂 Не удалось создать новый поток ${newThreadStatus.errorMessages}`,
+          );
+        }
+
         if ('errorMessages' in newAssistantStatus) {
           return ctx.reply(
             `📂 Не удалось получить настройки ассистента ${newAssistantStatus.errorMessages}`,
@@ -231,6 +242,7 @@ export class AssistantCommandsService {
     let threadStatus = await this.assistantService.getAllThread(
       `${ctx.from.id}`,
     );
+
     if ('errorMessages' in threadStatus) {
       return ctx.reply(
         `📂 Не удалось получить доступ к потокам ${threadStatus.errorMessages}`,
@@ -347,7 +359,7 @@ export class AssistantCommandsService {
         );
       }
 
-      const deleteFileStatus = this.deleteFile(filePath);
+      const deleteFileStatus = await this.deleteFile(filePath);
 
       if ('errorMessages' in deleteFileStatus) {
         return ctx.reply(deleteFileStatus.errorMessages);
@@ -401,7 +413,7 @@ export class AssistantCommandsService {
         '🔄 Подождите, идет обработка аудио...',
       );
 
-      console.log('audioMessage');
+      const audioFolderPath = path.join(__dirname, '..', '..', '..', 'audios');
       const fileId = ctx.message.voice?.file_id;
       const fileLink = await ctx.telegram.getFileLink(fileId);
       const userId = ctx.from.id;
@@ -412,12 +424,13 @@ export class AssistantCommandsService {
         responseType: 'stream',
       });
 
-      const dir = './audios';
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir);
+      if (!fs.existsSync(audioFolderPath)) {
+        fs.mkdirSync(audioFolderPath);
       }
 
-      const writer = fs.createWriteStream(`./audios/${userId}.ogg`);
+      const writer = fs.createWriteStream(
+        `${audioFolderPath}/${ctx.from.id}.ogg`,
+      );
 
       await new Promise((resolve, reject) => {
         response.data.pipe(writer);
@@ -427,10 +440,14 @@ export class AssistantCommandsService {
 
       await this.covertToMp3(String(userId));
 
-      const readStream = fs.createReadStream(`./audios/${userId}.mp3`);
+      const readStream = fs.createReadStream(
+        `${audioFolderPath}/${ctx.from.id}.ogg`,
+      );
 
       const transcription =
         await this.assistantService.transcriptionAudio(readStream);
+      
+    
 
       if ('errorMessages' in transcription) {
         return ctx.reply(
@@ -440,7 +457,8 @@ export class AssistantCommandsService {
 
       (ctx as Context & { message: { text: string } }).message.text =
         transcription.data;
-
+      await this.deleteFile(`${audioFolderPath}/${ctx.from.id}.mp3`);
+      await this.deleteFile(`${audioFolderPath}/${ctx.from.id}.ogg`);
       await this.editMessageText(ctx, sendMessage, '', false, true);
 
       return await this.streamText(ctx);
@@ -499,9 +517,9 @@ export class AssistantCommandsService {
     return parts;
   }
 
-  private deleteFile(filePath: string) {
+  private async deleteFile(filePath: string) {
     try {
-      fs.unlinkSync(filePath);
+      await fs.promises.unlink(filePath);
       return { data: 'Файл успешно удален' };
     } catch (error) {
       console.error('Error in deleteFile method:', error);
@@ -526,7 +544,6 @@ export class AssistantCommandsService {
           oldMessage.chat.id,
           oldMessage.message_id,
         );
-        console.log('сообщение удалено');
         return;
       }
       await ctx.telegram.editMessageText(
@@ -560,6 +577,8 @@ export class AssistantCommandsService {
       'audios',
       `${userId}.mp3`,
     );
-    return await this.oggConverter.convertToMp3(inputFile, outputFile);
+
+    const convect = await this.oggConverter.convertToMp3(inputFile, outputFile);
+    return convect;
   }
 }

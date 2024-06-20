@@ -245,6 +245,13 @@ export class OpenaiAssistantService implements OnModuleInit {
         'sessions',
         `t-${fileName}.json`,
       );
+
+      if (!fs.existsSync(savePath)) {
+        fs.mkdirSync(path.join(__dirname, '..', '..', 'sessions'), {
+          recursive: true,
+        });
+      }
+
       const savedThread = await fsPromises.readFile(savePath, 'utf8');
       if (!savedThread && savedThread.length === 0) {
         throw new Error(`No thread found in ${savePath}`);
@@ -393,12 +400,11 @@ export class OpenaiAssistantService implements OnModuleInit {
         content: `${newMessage}`,
       });
 
-      const stream =  this.openai.beta.threads.runs.stream(threadId, {
+      const stream = this.openai.beta.threads.runs.stream(threadId, {
         assistant_id: assistantId,
       });
 
       return { data: stream };
-          
     } catch (error) {
       const errorMessages = `Test run: ${error.message}`;
       this.logger.error(errorMessages);
