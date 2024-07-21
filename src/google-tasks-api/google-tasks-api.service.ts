@@ -12,7 +12,7 @@ export class GoogleTasksApiService implements OnModuleInit {
   private tasks: tasks_v1.Tasks;
   private readonly tokensFilePath = require('path').join(__dirname, '..', '..', 'configs', 'tokens.json');
   async onModuleInit() {
-    await this.init();
+   // await this.init();
   }
 
   async init() {
