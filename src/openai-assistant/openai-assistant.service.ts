@@ -11,14 +11,14 @@ enum ModelType {
   GPT_3_5_TURBO_0125 = 'gpt-3.5-turbo-0125',
   GPT_4_TURBO_PREVIEW = 'gpt-4-turbo-preview',
   GPT_4_VISION_PREVIEW = 'gpt-4-vision-preview',
-  GPT_4o_2024_05_13 = 'gpt-4o-2024-05-13',
+  GPT_4o = 'gpt-4o',
 }
 @Injectable()
 export class OpenaiAssistantService implements OnModuleInit {
   constructor(private readonly logger: LoggerService) {}
   private openai: OpenAI;
 
-  model: ModelType = ModelType.GPT_4o_2024_05_13;
+  model: ModelType = ModelType.GPT_4o;
 
   async onModuleInit() {
     const openaiKey = process.env.OPEN_AI_KEY;
@@ -356,6 +356,18 @@ export class OpenaiAssistantService implements OnModuleInit {
       return { data: completedVectorStore };
     } catch (error) {
       const errorMessages = `Get all vector store: ${error.message}`;
+      this.logger.error(errorMessages);
+      return { errorMessages };
+    }
+  }
+
+  async getVectorVectorStoreById(vectorStoreId: string) {
+    try {
+      const vectorStore =
+        await this.openai.beta.vectorStores.retrieve(vectorStoreId);
+      return { data: vectorStore };
+    } catch (error) {
+      const errorMessages = `Get vector store by id: ${error.message}`;
       this.logger.error(errorMessages);
       return { errorMessages };
     }

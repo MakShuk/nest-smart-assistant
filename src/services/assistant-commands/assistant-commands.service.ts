@@ -38,6 +38,21 @@ export class AssistantCommandsService {
     }
   };
 
+  info = async (ctx: Context) => {
+    try {
+      return ctx.reply(`Команды бота:
+       /start - Открывает главное меню помощника.
+       /reset - Сбрасывает текущее состояние или диалог.
+       /o - Преобразует текст в речь.
+      /files - Показывает файлы.
+      /store - Получает векторное представление хранилища.
+      /0 - Исправляет текст.`);
+    } catch (error) {
+      console.error('Error in info method:', error);
+      return ctx.reply('⚠️ Произошла ошибка при получении информации');
+    }
+  };
+
   assistantMenu = async (ctx: Context) => {
     try {
       const defaultAssistantParams = {
@@ -446,8 +461,6 @@ export class AssistantCommandsService {
 
       const transcription =
         await this.assistantService.transcriptionAudio(readStream);
-      
-    
 
       if ('errorMessages' in transcription) {
         return ctx.reply(
@@ -465,6 +478,72 @@ export class AssistantCommandsService {
     } catch (error) {
       console.error('Error in audioMessage method:', error);
       return ctx.reply('⚠️ Произошла ошибка при обработке аудиосообщения');
+    }
+  };
+
+  getVectorVectorStore = async (ctx: Context) => {
+    ctx.reply('🔄 Подождите, идет загрузка векторных хранилищ');
+    const vectorStoreStatus = await this.assistantService.getAllVectorStore();
+    if ('errorMessages' in vectorStoreStatus) {
+      return ctx.reply(
+        `📂 Не удалось получить доступ к векторному хранилищу ${vectorStoreStatus.errorMessages}`,
+      );
+    }
+
+    const menu = vectorStoreStatus.data
+      .filter((item) => item.name)
+      .map((item, index) => {
+        let status: string = '';
+        if ('activated' in item && item.activated) {
+          status = item.activated ? '✅ ' : '';
+        }
+        return [
+          Markup.button.callback(
+            `${status}${item.name}`,
+            'vector' + (index + 1),
+          ),
+        ];
+      });
+    return ctx.reply('Список хранилищ', Markup.inlineKeyboard(menu));
+  };
+
+  setVectorStoreSettings = async (ctx: Context) => {
+    try {
+      const userId = ctx.from.id;
+      if ('match' in ctx && Array.isArray(ctx.match)) {
+        let lastDigitRegex = ctx.match[0].match(/\d+$/) - 1;
+
+        const vectorStoreStatus =
+          await this.assistantService.getAllVectorStore();
+
+        if ('errorMessages' in vectorStoreStatus) {
+          return ctx.reply(
+            `📂 Не удалось получить доступ к векторному хранилищу ${vectorStoreStatus.errorMessages}`,
+          );
+        }
+
+        const store = vectorStoreStatus.data[lastDigitRegex];
+
+        const createThreadStatus = await this.assistantService.createThread(
+          [store.id],
+          `${userId}`,
+        );
+
+        if ('errorMessages' in createThreadStatus) {
+          return ctx.reply(
+            `⚠️ Не удалось создать поток ${createThreadStatus.errorMessages}`,
+          );
+        }
+
+        return ctx.reply(
+          `🚀 Диалог сброшен. 📗Настройки векторного хранилища ${store.name} успешно сохранены`,
+        );
+      }
+    } catch (error) {
+      console.error('Error in setVectorStoreSettings method:', error);
+      return ctx.reply(
+        '⚠️ Произошла ошибка при обработке настроек векторного хранилища',
+      );
     }
   };
 

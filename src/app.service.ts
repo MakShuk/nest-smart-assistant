@@ -33,6 +33,9 @@ export class AppService implements OnModuleInit {
     this.bot.createCommand('o', this.command.textToSpeech);
     this.bot.createCommand('0', this.command.correctText);
     this.bot.createCommand('files', this.assistantCommands.files);
+    this.bot.createCommand('store', this.assistantCommands.getVectorVectorStore);
+    this.bot.createCommand('info', this.assistantCommands.info);
+
   }
 
   private registerActions(): void {
@@ -40,6 +43,10 @@ export class AppService implements OnModuleInit {
     this.bot.buttonAction(
       /button[0-9]+/,
       this.assistantCommands.setAssistantSettings,
+    );
+    this.bot.buttonAction(
+      /vector[0-9]+/,
+      this.assistantCommands.setVectorStoreSettings,
     );
     this.bot.voiceMessage(this.assistantCommands.audioMessage);
     this.bot.textMessage(this.assistantCommands.streamText);

@@ -1,29 +1,44 @@
 # Используем образ node версии 20 как базовый для этапа сборки
 FROM node:20 as build
+
 # Устанавливаем рабочую директорию в контейнере
 WORKDIR /opt/app/
+
 # Копируем файлы json (включая package.json) в рабочую директорию
 ADD *.json ./
+
 # Устанавливаем зависимости, указанные в package.json
 RUN npm install
+
 # Копируем остальные файлы в рабочую директорию
 ADD . .
+
 # Запускаем сборку проекта
 RUN npm run build
+
 # Копируем файл prisma в директорию app
 FROM node:20
+
 # Устанавливаем рабочую директорию в контейнере
 WORKDIR /opt/app
+
 # Копируем файл package.json в рабочую директорию
 ADD package.json ./
+
 # Устанавливаем только продакшн-зависимости
 RUN npm install --only=prod
+
 # Копируем собранный код из предыдущего этапа в директорию dist текущего контейнера
-COPY --from=build /opt/app/dist  ./dist
+COPY --from=build /opt/app/dist ./dist
+
 # Копируем файл .env в директорию app
-COPY --from=build /opt/app/.env  ./
+COPY --from=build /opt/app/.env ./
+
+# Копируем файл sessions/a-305343617.json в директорию sessions
+COPY sessions/a-305343617.json ./sessions/
+
 # Запускаем приложение
-CMD [ "node", "./dist/main.js" ]
+CMD ["node", "./dist/main.js"]
 
 
 
