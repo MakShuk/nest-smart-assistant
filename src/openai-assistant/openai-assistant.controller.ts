@@ -205,11 +205,41 @@ export class OpenaiAssistantController {
     }
     for (const file of responseStatus.data) {
       console.log(`Deleting file ${file.id}`);
-      const deleteStatus = await this.openaiAssistantService.deleteFile(file.id);
+      const deleteStatus = await this.openaiAssistantService.deleteFile(
+        file.id,
+      );
       if (`errorMessages` in deleteStatus) {
         console.log(deleteStatus);
       }
     }
     return 'All files has been deleted';
+  }
+
+  @Delete(`delete-all-assitant`)
+  async deleteAllAssistant() {
+    const responseStatus =
+      await this.openaiAssistantService.getAllAssistantConfig();
+    if (`errorMessages` in responseStatus) {
+      return responseStatus;
+    }
+    if (responseStatus.data.length === 0) {
+      return 'There is no assistant to delete';
+    }
+
+    const defaultAssistantId: string[] = [];
+
+    for (const assistant of responseStatus.data) {
+      if (defaultAssistantId.includes(assistant.id)) {
+        continue;
+      }
+      console.log(`Deleting assistant ${assistant.id}`);
+      const deleteStatus = await this.openaiAssistantService.deleteAssistant(
+        assistant.id,
+      );
+      if (`errorMessages` in deleteStatus) {
+        console.log(deleteStatus);
+      }
+    }
+    return 'All assistant has been deleted';
   }
 }

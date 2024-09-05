@@ -1,0 +1,2 @@
+
+DELETE http://localhost:2998/openai-assistant/delete-all-assitant
