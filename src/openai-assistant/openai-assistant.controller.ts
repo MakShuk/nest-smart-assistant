@@ -226,7 +226,13 @@ export class OpenaiAssistantController {
       return 'There is no assistant to delete';
     }
 
-    const defaultAssistantId: string[] = [];
+    const defaultAssistantId: string[] = [
+      `asst_VFmM5c80KCBG2ENgmDyLrzDe`,
+      `asst_qpwQE2K1ewj0WI2VcSWArfue`,
+      `asst_SgOYHidqUmqTKYcLEyb3rSUJ`,
+      `asst_IDIz4we3F3Rb1Q0KIReHTRTw`,
+      `asst_qvFojSb5xXcHm5qOOWXFQXCy`,
+    ];
 
     for (const assistant of responseStatus.data) {
       if (defaultAssistantId.includes(assistant.id)) {
