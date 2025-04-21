@@ -1,73 +1,169 @@
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
+  <img src="https://nestjs.com/img/logo-small.svg" width="120" alt="NestJS Logo" />
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+# Nest Smart Assistant
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+[Русский](./README.ru.md)
+
+![Node.js](https://img.shields.io/badge/node-%3E=18.0.0-green)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Platform](https://img.shields.io/badge/platform-NestJS%2C%20TypeScript-blueviolet)
+
+> **A multifunctional assistant based on NestJS with OpenAI, Google Tasks, and Telegram integration.**
+
+---
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+**Nest Smart Assistant** is a server-side application built with TypeScript/NestJS, designed for task automation, OpenAI (GPT) integration, Google Tasks management, and interaction via a Telegram bot. The project implements user authentication, session management, logging, audio conversion, and an extensible service architecture.
+
+---
+
+## Features
+
+- OpenAI (GPT) integration for text generation and processing
+- Google Tasks API support (create and manage tasks)
+- Telegram bot for interactive communication
+- User authentication and session management
+- Event and action logging
+- Audio file conversion (OGG and more)
+- Flexible, extensible architecture
+
+---
+
+## Project Structure
+
+```
+src/
+├── app.module.ts                # Main application module
+├── auth/                        # Authentication module and guards
+├── create-daily-schedule/       # Daily schedule creation module
+├── google-tasks-api/            # Google Tasks integration
+├── openai/                      # OpenAI API logic
+├── openai-assistant/            # OpenAI-based assistant logic
+├── services/                    # Services: commands, settings, logger, sessions, converter
+├── telegraf/                    # Telegram bot (Telegraf)
+└── main.ts                      # Entry point
+```
+
+---
+
+## Requirements
+
+- Node.js >= 18.x
+- npm >= 9.x
+- Docker (optional, for containerization)
+- API keys for OpenAI, Google (see configuration)
+
+---
 
 ## Installation
 
 ```bash
-$ npm install
+git clone https://github.com/your-user/nest-smart-assistant.git
+cd nest-smart-assistant
+npm install
 ```
 
-## Running the app
+---
+
+## Running the App
+
+### Development mode
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm run start:dev
 ```
 
-## Test
+### Production mode
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run start:prod
 ```
 
-## Support
+### Using Docker
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+docker build -t nest-smart-assistant .
+docker run -p 3000:3000 nest-smart-assistant
+```
 
-## Stay in touch
+### Using docker-compose
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```bash
+docker-compose up --build
+```
+
+---
+
+## Configuration
+
+- Main settings are stored in `configs/settings.json`.
+- For external APIs (OpenAI, Google), provide the required keys.
+- Example environment variables:
+  - `OPENAI_API_KEY`
+  - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+  - `TELEGRAM_BOT_TOKEN`
+
+---
+
+## Usage Examples
+
+### 1. Interacting via Telegram
+
+- Find the bot by the name specified in the settings and start a conversation.
+- The assistant supports commands for task creation, text generation, and more.
+
+### 2. OpenAI request via REST API
+
+```http
+POST /openai/ask
+Content-Type: application/json
+
+{
+  "prompt": "Create a daily plan",
+  "userId": "user-123"
+}
+```
+
+### 3. Creating a Google Task
+
+```http
+POST /google-tasks-api/create
+Content-Type: application/json
+
+{
+  "title": "Call the client",
+  "due": "2025-04-21T18:00:00Z"
+}
+```
+
+---
+
+## Testing
+
+```bash
+# Unit tests
+npm run test
+
+# E2E tests
+npm run test:e2e
+
+# Test coverage
+npm run test:cov
+```
+
+---
+
+## Contributing
+
+We welcome your suggestions and pull requests! Please read CONTRIBUTING.md (if available) or open an issue to discuss your ideas.
+
+---
 
 ## License
 
-Nest is [MIT licensed](LICENSE).
+This project is licensed under the [MIT License](LICENSE).
+
+---

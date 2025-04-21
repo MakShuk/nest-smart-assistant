@@ -64,3 +64,4 @@ tokens.json
 *.ogg
 text-to-speech.txt
 configs/thread.json
+.roo/rules/rules.md
