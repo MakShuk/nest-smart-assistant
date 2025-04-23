@@ -61,7 +61,7 @@ src/
 ## Installation
 
 ```bash
-git clone https://github.com/your-user/nest-smart-assistant.git
+git clone https://github.com/makshuk/nest-smart-assistant.git
 cd nest-smart-assistant
 npm install
 ```
